@@ -162,12 +162,20 @@ class StickyNotes {
         try {
             console.log('Loading floating notes from storage...');
             const response = await this.util.sendMessageToBackground({ action: 'getNotes' });
+            console.log('Background response:', response);
+            
             if (response.success) {
                 const storageNotes = response.data;
-                console.log('Loaded', storageNotes.length, 'sticky notes from storage');
+                console.log('Loaded', storageNotes.length, 'sticky notes from storage:', storageNotes);
                 
                 // Always update with latest from storage
                 this.stickyNotes = storageNotes;
+                
+                // Add debugging for container availability
+                const container = document.getElementById('notes-floating-container');
+                console.log('Container available:', !!container);
+                console.log('Notes tab active:', this.isNotesTabActive());
+                
                 this.renderFloatingNotes();
             } else {
                 console.error('Failed to load notes:', response);
@@ -198,9 +206,16 @@ class StickyNotes {
         // Ensure all notes have valid position data before rendering
         this.validateNotePositions();
 
-        this.stickyNotes.forEach(note => {
-            this.createFloatingNote(note);
+        this.stickyNotes.forEach((note, index) => {
+            try {
+                console.log(`Rendering note ${index + 1}/${this.stickyNotes.length}:`, note.id, note);
+                this.createFloatingNote(note);
+            } catch (error) {
+                console.error(`Error rendering note ${note.id}:`, error, note);
+            }
         });
+        
+        console.log('Finished rendering all notes');
     }
 
     validateNotePositions() {
@@ -261,17 +276,32 @@ class StickyNotes {
 
         // Ensure content is properly loaded
         const noteContent = note.content || '';
-        console.log('Creating note with content:', note.id, noteContent);
+        const noteTitle = note.title || '';
+        console.log('Creating note with content:', note.id, 'title:', noteTitle, 'content:', noteContent);
         
-        noteElement.innerHTML = `
-            <div class="sticky-note-header">
-                <input type="text" class="sticky-note-title" placeholder="Note title..." value="${this.escapeHtml(note.title || '')}" maxlength="50">
-                <button class="sticky-note-close" data-note-id="${note.id}">&times;</button>
-            </div>
-            <div class="sticky-note-content">
-                <textarea class="sticky-note-textarea" placeholder="Type your note here...">${this.escapeHtml(noteContent)}</textarea>
-            </div>
-        `;
+        try {
+            noteElement.innerHTML = `
+                <div class="sticky-note-header">
+                    <input type="text" class="sticky-note-title" placeholder="Note title..." value="${this.escapeHtml(noteTitle)}" maxlength="50">
+                    <button class="sticky-note-close" data-note-id="${note.id}">&times;</button>
+                </div>
+                <div class="sticky-note-content">
+                    <textarea class="sticky-note-textarea" placeholder="Type your note here...">${this.escapeHtml(noteContent)}</textarea>
+                </div>
+            `;
+        } catch (error) {
+            console.error('Error creating note HTML for note:', note.id, error);
+            // Fallback to basic note structure
+            noteElement.innerHTML = `
+                <div class="sticky-note-header">
+                    <input type="text" class="sticky-note-title" placeholder="Note title..." value="" maxlength="50">
+                    <button class="sticky-note-close" data-note-id="${note.id}">&times;</button>
+                </div>
+                <div class="sticky-note-content">
+                    <textarea class="sticky-note-textarea" placeholder="Type your note here...">${noteContent}</textarea>
+                </div>
+            `;
+        }
 
         container.appendChild(noteElement);
 
