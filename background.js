@@ -1,0 +1,180 @@
+// Background script for Sticky Notes extension
+class StickyNotesBackground {
+    constructor() {
+        this.stickyNotes = [];
+        this.init();
+    }
+
+    init() {
+        // Listen for extension installation
+        chrome.runtime.onInstalled.addListener(() => {
+            console.log('Sticky Notes extension installed');
+            this.loadNotesFromStorage();
+        });
+
+        // Listen for messages from content scripts and popup
+        chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+            this.handleMessage(message, sender, sendResponse);
+            return true; // Keep the message channel open for async responses
+        });
+
+        // Load notes on startup
+        this.loadNotesFromStorage();
+    }
+
+    async handleMessage(message, sender, sendResponse) {
+        try {
+            console.log('Background received message:', message.action);
+
+            switch (message.action) {
+                case 'saveNote':
+                    await this.saveNote(message.note);
+                    sendResponse({ success: true });
+                    break;
+
+                case 'getNotes':
+                    const notes = await this.getNotes();
+                    sendResponse({ success: true, data: notes });
+                    break;
+
+                case 'deleteNote':
+                    await this.deleteNote(message.noteId);
+                    sendResponse({ success: true });
+                    break;
+
+                case 'clearAllNotes':
+                    await this.clearAllNotes();
+                    sendResponse({ success: true });
+                    break;
+
+                case 'updateNotePosition':
+                    await this.updateNotePosition(message.noteId, message.x, message.y);
+                    sendResponse({ success: true });
+                    break;
+
+                case 'updateNoteSize':
+                    await this.updateNoteSize(message.noteId, message.width, message.height);
+                    sendResponse({ success: true });
+                    break;
+
+                case 'updateNoteContent':
+                    await this.updateNoteContent(message.noteId, message.content);
+                    sendResponse({ success: true });
+                    break;
+
+                default:
+                    console.warn('Unknown action:', message.action);
+                    sendResponse({ success: false, error: 'Unknown action' });
+            }
+        } catch (error) {
+            console.error('Error handling message:', error);
+            sendResponse({ success: false, error: error.message });
+        }
+    }
+
+    async loadNotesFromStorage() {
+        try {
+            const result = await chrome.storage.local.get(['notes']);
+            this.stickyNotes = result.notes || [];
+            console.log('Loaded', this.stickyNotes.length, 'notes from storage');
+        } catch (error) {
+            console.error('Error loading notes from storage:', error);
+            this.stickyNotes = [];
+        }
+    }
+
+    async saveNote(note) {
+        try {
+            // Check if note already exists
+            const existingIndex = this.stickyNotes.findIndex(n => n.id === note.id);
+            
+            if (existingIndex !== -1) {
+                // Update existing note
+                this.stickyNotes[existingIndex] = { ...this.stickyNotes[existingIndex], ...note };
+            } else {
+                // Add new note
+                this.stickyNotes.push(note);
+            }
+
+            await chrome.storage.local.set({ notes: this.stickyNotes });
+            console.log('Note saved:', note.id);
+        } catch (error) {
+            console.error('Error saving note:', error);
+            throw error;
+        }
+    }
+
+    async getNotes() {
+        return this.stickyNotes;
+    }
+
+    async deleteNote(noteId) {
+        try {
+            this.stickyNotes = this.stickyNotes.filter(note => note.id !== noteId);
+            await chrome.storage.local.set({ notes: this.stickyNotes });
+            console.log('Note deleted:', noteId);
+        } catch (error) {
+            console.error('Error deleting note:', error);
+            throw error;
+        }
+    }
+
+    async clearAllNotes() {
+        try {
+            this.stickyNotes = [];
+            await chrome.storage.local.set({ notes: [] });
+            console.log('All notes cleared');
+        } catch (error) {
+            console.error('Error clearing notes:', error);
+            throw error;
+        }
+    }
+
+    async updateNotePosition(noteId, x, y) {
+        try {
+            const note = this.stickyNotes.find(n => n.id === noteId);
+            if (note) {
+                note.x = x;
+                note.y = y;
+                await chrome.storage.local.set({ notes: this.stickyNotes });
+                console.log('Note position updated:', noteId, x, y);
+            }
+        } catch (error) {
+            console.error('Error updating note position:', error);
+            throw error;
+        }
+    }
+
+    async updateNoteSize(noteId, width, height) {
+        try {
+            const note = this.stickyNotes.find(n => n.id === noteId);
+            if (note) {
+                note.width = width;
+                note.height = height;
+                await chrome.storage.local.set({ notes: this.stickyNotes });
+                console.log('Note size updated:', noteId, width, height);
+            }
+        } catch (error) {
+            console.error('Error updating note size:', error);
+            throw error;
+        }
+    }
+
+    async updateNoteContent(noteId, content) {
+        try {
+            const note = this.stickyNotes.find(n => n.id === noteId);
+            if (note) {
+                note.content = content;
+                note.timestamp = Date.now();
+                await chrome.storage.local.set({ notes: this.stickyNotes });
+                console.log('Note content updated:', noteId);
+            }
+        } catch (error) {
+            console.error('Error updating note content:', error);
+            throw error;
+        }
+    }
+}
+
+// Initialize the background script
+new StickyNotesBackground();

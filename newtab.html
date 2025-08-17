@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sticky Notes - Remember Me</title>
+    <link rel="stylesheet" href="newtab.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Sticky Notes Tab -->
+        <div class="tab-content active" id="notes-tab">
+            <div class="notes-main-container">
+                <!-- Full-screen Floating Sticky Notes Container -->
+                <div id="notes-floating-container" class="notes-floating-container">
+                    <!-- Floating sticky notes will be rendered here -->
+                </div>
+                
+                <!-- Floating Action Buttons -->
+                <div class="notes-floating-actions">
+                    <button id="add-note-btn" class="floating-action-btn add-note-fab" title="Add Note">
+                        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/>
+                            <path d="M8 6.5a.5.5 0 0 1 .5.5v1.5H10a.5.5 0 0 1 0 1H8.5V11a.5.5 0 0 1-1 0V9.5H6a.5.5 0 0 1 0-1h1.5V7a.5.5 0 0 1 .5-.5z"/>
+                        </svg>
+                    </button>
+                    <button id="clear-notes-btn" class="floating-action-btn clear-notes-fab" title="Clear All Notes">
+                        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M6.5 1h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5ZM11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3A1.5 1.5 0 0 0 5 1.5v1H2.506a.58.58 0 0 0-.01 0H1.5a.5.5 0 0 0 0 1h.538l.853 10.66A2 2 0 0 0 4.885 16h6.23a2 2 0 0 0 1.994-1.84L14.962 3.5H15.5a.5.5 0 0 0 0-1h-4.5Z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load utility class first -->
+    <script src="modules/Utility.js"></script>
+    
+    <!-- Load sticky notes module -->
+    <script src="modules/StickyNotes.js"></script>
+    
+    <!-- Load main script -->
+    <script src="newtab.js"></script>
+</body>
+</html>
