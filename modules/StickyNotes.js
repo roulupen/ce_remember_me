@@ -265,6 +265,7 @@ class StickyNotes {
         
         noteElement.innerHTML = `
             <div class="sticky-note-header">
+                <input type="text" class="sticky-note-title" placeholder="Note title..." value="${this.escapeHtml(note.title || '')}" maxlength="50">
                 <button class="sticky-note-close" data-note-id="${note.id}">&times;</button>
             </div>
             <div class="sticky-note-content">
@@ -343,6 +344,74 @@ class StickyNotes {
                 console.error('Error saving note content on blur:', error);
             }
         });
+
+        // Auto-save title on input change
+        const titleInput = noteElement.querySelector('.sticky-note-title');
+        if (!titleInput) {
+            console.error('Title input not found in note:', note.id);
+            return;
+        }
+        
+        // Ensure title input can receive events
+        titleInput.addEventListener('mousedown', (e) => {
+            e.stopPropagation(); // Prevent drag from starting
+        });
+        
+        titleInput.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent any parent click handlers
+            titleInput.focus(); // Ensure focus
+        });
+        
+        let titleSaveTimeout;
+        
+        titleInput.addEventListener('input', () => {
+            clearTimeout(titleSaveTimeout);
+            titleSaveTimeout = setTimeout(async () => {
+                console.log('Saving note title:', note.id, titleInput.value);
+                try {
+                    // Update the note title in background
+                    await this.util.sendMessageToBackground({
+                        action: 'updateNoteTitle',
+                        noteId: note.id,
+                        title: titleInput.value.trim()
+                    });
+                    
+                    // Update local array immediately
+                    const localNote = this.stickyNotes.find(n => n.id === note.id);
+                    if (localNote) {
+                        localNote.title = titleInput.value.trim();
+                    }
+                    
+                    console.log('Note title saved successfully');
+                } catch (error) {
+                    console.error('Error saving note title:', error);
+                    this.util.showError('Failed to save note title');
+                }
+            }, 500);
+        });
+        
+        // Also save title on blur
+        titleInput.addEventListener('blur', async () => {
+            clearTimeout(titleSaveTimeout);
+            console.log('Saving note title on blur:', note.id, titleInput.value);
+            try {
+                await this.util.sendMessageToBackground({
+                    action: 'updateNoteTitle',
+                    noteId: note.id,
+                    title: titleInput.value.trim()
+                });
+                
+                // Update local array immediately
+                const localNote = this.stickyNotes.find(n => n.id === note.id);
+                if (localNote) {
+                    localNote.title = titleInput.value.trim();
+                }
+                
+                console.log('Note title saved on blur');
+            } catch (error) {
+                console.error('Error saving note title on blur:', error);
+            }
+        });
     }
 
     makeDraggable(element) {
@@ -367,12 +436,14 @@ class StickyNotes {
 
         function dragMouseDown(e) {
             e = e || window.event;
-            e.preventDefault();
             
-            // Don't drag if clicking on close button
-            if (e.target.classList.contains('sticky-note-close')) {
+            // Don't drag if clicking on close button or title input
+            if (e.target.classList.contains('sticky-note-close') || 
+                e.target.classList.contains('sticky-note-title')) {
                 return;
             }
+            
+            e.preventDefault();
             
             isDragging = true;
             element.classList.add('dragging');
@@ -532,13 +603,13 @@ class StickyNotes {
         
         const note = {
             id: Date.now().toString(),
+            title: '',
             content: '',
             color: this.getRandomNoteColor(),
             x: Math.max(10, Math.min(x - 100, window.innerWidth - 210)),
             y: Math.max(10, Math.min(y - 100, (window.innerHeight - 80) - 180)),
             width: 200,
-            height: 200,
-            timestamp: new Date().toISOString()
+            height: 200
         };
 
         try {
@@ -596,19 +667,30 @@ class StickyNotes {
             return;
         }
 
-        const html = this.stickyNotes.map(note => `
-            <div class="note-card" data-note-id="${note.id}">
-                <div class="note-card-header">
-                    <div class="note-card-title">${this.util.escapeHtml(note.title || 'Untitled')}</div>
-                    <div class="note-card-date">${this.util.formatDate(note.updatedAt || note.createdAt)}</div>
+        const html = this.stickyNotes.map(note => {
+            // Smart title generation: use title if available, otherwise use first line of content
+            let displayTitle = note.title && note.title.trim() ? note.title.trim() : '';
+            if (!displayTitle && note.content) {
+                const firstLine = note.content.split('\n')[0].trim();
+                displayTitle = firstLine ? this.util.truncateText(firstLine, 30) : 'Untitled';
+            } else if (!displayTitle) {
+                displayTitle = 'Untitled';
+            }
+            
+            return `
+                <div class="note-card" data-note-id="${note.id}">
+                    <div class="note-card-header">
+                        <div class="note-card-title">${this.util.escapeHtml(displayTitle)}</div>
+                        <div class="note-card-date">${this.util.formatDate(note.updatedAt || note.createdAt)}</div>
+                    </div>
+                    <div class="note-card-content">${this.util.escapeHtml(this.util.truncateText(note.content || '', 100))}</div>
+                    <div class="note-card-actions">
+                        <button class="note-card-action" onclick="stickyNotes.editNoteInTab('${note.id}')">✏️</button>
+                        <button class="note-card-action" onclick="stickyNotes.deleteNoteFromTab('${note.id}')">🗑️</button>
+                    </div>
                 </div>
-                <div class="note-card-content">${this.util.escapeHtml(this.util.truncateText(note.content || '', 100))}</div>
-                <div class="note-card-actions">
-                    <button class="note-card-action" onclick="stickyNotes.editNoteInTab('${note.id}')">✏️</button>
-                    <button class="note-card-action" onclick="stickyNotes.deleteNoteFromTab('${note.id}')">🗑️</button>
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
 
         container.innerHTML = html;
     }
@@ -664,18 +746,26 @@ class StickyNotes {
         this.currentEditingNote = note;
         const modal = document.getElementById('note-modal');
         const titleEl = modal.querySelector('#modal-title');
+        const titleInput = modal.querySelector('#note-title');
         const contentInput = modal.querySelector('#note-content');
 
         if (note) {
             titleEl.textContent = 'Edit Note';
+            if (titleInput) titleInput.value = note.title || '';
             contentInput.value = note.content || '';
         } else {
             titleEl.textContent = 'Add Sticky Note';
+            if (titleInput) titleInput.value = '';
             contentInput.value = '';
         }
 
         modal.classList.add('active');
-        contentInput.focus();
+        // Focus title input first if it exists, otherwise content
+        if (titleInput) {
+            titleInput.focus();
+        } else {
+            contentInput.focus();
+        }
     }
 
     closeNoteModal() {
@@ -685,9 +775,11 @@ class StickyNotes {
     }
 
     async saveNote() {
+        const titleInput = document.getElementById('note-title');
         const content = document.getElementById('note-content').value.trim();
+        const title = titleInput ? titleInput.value.trim() : '';
 
-        if (!content) {
+        if (!content && !title) {
             return;
         }
 
@@ -696,6 +788,7 @@ class StickyNotes {
         let y = Math.random() * ((window.innerHeight - 80) - 190) + 10;
 
         const note = {
+            title: title,
             content: content,
             color: this.getRandomNoteColor(),
             x: x,

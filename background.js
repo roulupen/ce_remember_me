@@ -62,6 +62,11 @@ class StickyNotesBackground {
                     sendResponse({ success: true });
                     break;
 
+                case 'updateNoteTitle':
+                    await this.updateNoteTitle(message.noteId, message.title);
+                    sendResponse({ success: true });
+                    break;
+
                 default:
                     console.warn('Unknown action:', message.action);
                     sendResponse({ success: false, error: 'Unknown action' });
@@ -90,10 +95,21 @@ class StickyNotesBackground {
             
             if (existingIndex !== -1) {
                 // Update existing note
-                this.stickyNotes[existingIndex] = { ...this.stickyNotes[existingIndex], ...note };
+                const updatedNote = { 
+                    ...this.stickyNotes[existingIndex], 
+                    ...note, 
+                    updatedAt: Date.now() 
+                };
+                this.stickyNotes[existingIndex] = updatedNote;
             } else {
-                // Add new note
-                this.stickyNotes.push(note);
+                // Add new note with timestamps
+                const newNote = {
+                    ...note,
+                    id: note.id || Date.now().toString(),
+                    createdAt: Date.now(),
+                    updatedAt: Date.now()
+                };
+                this.stickyNotes.push(newNote);
             }
 
             await chrome.storage.local.set({ notes: this.stickyNotes });
@@ -165,12 +181,27 @@ class StickyNotesBackground {
             const note = this.stickyNotes.find(n => n.id === noteId);
             if (note) {
                 note.content = content;
-                note.timestamp = Date.now();
+                note.updatedAt = Date.now();
                 await chrome.storage.local.set({ notes: this.stickyNotes });
                 console.log('Note content updated:', noteId);
             }
         } catch (error) {
             console.error('Error updating note content:', error);
+            throw error;
+        }
+    }
+
+    async updateNoteTitle(noteId, title) {
+        try {
+            const note = this.stickyNotes.find(n => n.id === noteId);
+            if (note) {
+                note.title = title;
+                note.updatedAt = Date.now();
+                await chrome.storage.local.set({ notes: this.stickyNotes });
+                console.log('Note title updated:', noteId);
+            }
+        } catch (error) {
+            console.error('Error updating note title:', error);
             throw error;
         }
     }

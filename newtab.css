@@ -183,11 +183,46 @@ body {
     background: rgba(0, 0, 0, 0.1);
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: space-between;
     padding: 0 8px;
     cursor: move;
     position: relative;
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    gap: 8px;
+    user-select: none; /* Prevent text selection on header */
+}
+
+.sticky-note-title {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #333;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 6px;
+    border-radius: 3px;
+    cursor: text;
+    transition: background-color 0.2s ease;
+    min-width: 0; /* Allow shrinking */
+    max-width: 120px; /* Prevent title from taking too much space */
+    pointer-events: auto; /* Ensure input receives pointer events */
+    z-index: 10; /* Ensure input is above other elements */
+    position: relative;
+    user-select: text; /* Allow text selection in input */
+    -webkit-user-select: text; /* Safari support */
+}
+
+.sticky-note-title:hover,
+.sticky-note-title:focus {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.sticky-note-title::placeholder {
+    color: #666;
+    font-weight: normal;
+    opacity: 0.7;
 }
 
 .sticky-note-header::before {
@@ -196,8 +231,8 @@ body {
     left: 8px;
     top: 50%;
     transform: translateY(-50%);
-    width: 20px;
-    height: 3px;
+    width: 16px;
+    height: 2px;
     background: repeating-linear-gradient(
         90deg,
         rgba(0, 0, 0, 0.2) 0px,
@@ -205,6 +240,8 @@ body {
         transparent 2px,
         transparent 4px
     );
+    pointer-events: none;
+    z-index: 1;
 }
 
 .windows-sticky-note.dragging .sticky-note-header {
