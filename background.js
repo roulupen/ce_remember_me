@@ -119,19 +119,27 @@ class StickyNotesBackground {
 
     async saveNote(note) {
         try {
+            console.log('🔄 Background: Saving note:', note.id, { x: note.x, y: note.y, width: note.width, height: note.height });
+            
             // Check if note already exists
             const existingIndex = this.stickyNotes.findIndex(n => n.id === note.id);
             
             if (existingIndex !== -1) {
                 // Update existing note
+                console.log('🔄 Background: Updating existing note at index', existingIndex);
+                console.log('🔄 Background: Old note:', { x: this.stickyNotes[existingIndex].x, y: this.stickyNotes[existingIndex].y });
+                
                 const updatedNote = { 
                     ...this.stickyNotes[existingIndex], 
                     ...note, 
                     updatedAt: Date.now() 
                 };
                 this.stickyNotes[existingIndex] = updatedNote;
+                
+                console.log('🔄 Background: Updated note:', { x: updatedNote.x, y: updatedNote.y, width: updatedNote.width, height: updatedNote.height });
             } else {
                 // Add new note with timestamps
+                console.log('🔄 Background: Adding new note');
                 const newNote = {
                     ...note,
                     id: note.id || Date.now().toString(),
@@ -139,12 +147,13 @@ class StickyNotesBackground {
                     updatedAt: Date.now()
                 };
                 this.stickyNotes.push(newNote);
+                console.log('🔄 Background: New note added:', { x: newNote.x, y: newNote.y, width: newNote.width, height: newNote.height });
             }
 
             await chrome.storage.local.set({ notes: this.stickyNotes });
-            console.log('Note saved:', note.id);
+            console.log('✅ Background: Note saved to storage:', note.id);
         } catch (error) {
-            console.error('Error saving note:', error);
+            console.error('❌ Background: Error saving note:', error);
             throw error;
         }
     }

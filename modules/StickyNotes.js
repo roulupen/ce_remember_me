@@ -168,6 +168,11 @@ class StickyNotes {
                 const storageNotes = response.data;
                 console.log('Loaded', storageNotes.length, 'sticky notes from storage:', storageNotes);
                 
+                // Log position data for debugging
+                storageNotes.forEach(note => {
+                    console.log(`Note ${note.id} position:`, { x: note.x, y: note.y, width: note.width, height: note.height });
+                });
+                
                 // Always update with latest from storage
                 this.stickyNotes = storageNotes;
                 
@@ -223,13 +228,19 @@ class StickyNotes {
         if (!container) return;
 
         this.stickyNotes.forEach(note => {
-            // Check if note has valid position data
-            if (note.x === undefined || note.y === undefined) {
-                console.log(`Note ${note.id} missing position data, assigning default position`);
+            // Check if note has valid position data - be more strict about what constitutes valid data
+            if (note.x === undefined || note.y === undefined || note.x === null || note.y === null || 
+                typeof note.x !== 'number' || typeof note.y !== 'number') {
+                console.log(`Note ${note.id} missing or invalid position data, assigning default position`);
+                console.log(`Current position data:`, { x: note.x, y: note.y, width: note.width, height: note.height });
+                
+                // Generate new position
                 note.x = Math.random() * (window.innerWidth - 220) + 10;
                 note.y = Math.random() * ((window.innerHeight - 80) - 190) + 10;
                 note.width = note.width || 200;
                 note.height = note.height || 200;
+                
+                console.log(`Assigned new position for note ${note.id}:`, { x: note.x, y: note.y });
                 
                 // Save the assigned position
                 this.saveNotePosition(note.id, {
@@ -238,6 +249,8 @@ class StickyNotes {
                     width: note.width,
                     height: note.height
                 });
+            } else {
+                console.log(`Note ${note.id} has valid position data:`, { x: note.x, y: note.y, width: note.width, height: note.height });
             }
         });
     }
@@ -251,16 +264,19 @@ class StickyNotes {
         
         // Use stored position data, or calculate default position only if not stored
         let x, y;
-        if (note.x !== undefined && note.y !== undefined) {
+        console.log(`Creating floating note ${note.id} with position data:`, { x: note.x, y: note.y, width: note.width, height: note.height });
+        
+        if (note.x !== undefined && note.y !== undefined && typeof note.x === 'number' && typeof note.y === 'number') {
             // Use exact stored position
             x = note.x;
             y = note.y;
-            console.log(`Using stored position for note ${note.id}:`, { x, y });
+            console.log(`✓ Using stored position for note ${note.id}:`, { x, y });
         } else {
             // Only generate random position for truly new notes
             x = Math.random() * (window.innerWidth - 220) + 10;
             y = Math.random() * ((window.innerHeight - 80) - 190) + 10;
-            console.log(`Generated new position for note ${note.id}:`, { x, y });
+            console.log(`⚠ Generated new position for note ${note.id}:`, { x, y });
+            console.log(`⚠ Reason: x=${note.x} (${typeof note.x}), y=${note.y} (${typeof note.y})`);
             
             // Save the generated position immediately
             this.saveNotePosition(note.id, { x, y });
@@ -574,15 +590,29 @@ class StickyNotes {
             // Find the note and update it
             const note = this.stickyNotes.find(n => n.id == noteId);
             if (note) {
-                console.log(`Saving position for note ${noteId}:`, updates);
+                console.log(`💾 Saving position for note ${noteId}:`, updates);
+                console.log(`💾 Note before update:`, { x: note.x, y: note.y, width: note.width, height: note.height });
+                
+                // Update the note with new position data
                 Object.assign(note, updates);
-                await this.util.sendMessageToBackground({ action: 'saveNote', note });
-                console.log(`Position saved for note ${noteId}`);
+                note.updatedAt = Date.now(); // Add timestamp
+                
+                console.log(`💾 Note after update:`, { x: note.x, y: note.y, width: note.width, height: note.height });
+                
+                // Save to background storage
+                const response = await this.util.sendMessageToBackground({ action: 'saveNote', note });
+                
+                if (response.success) {
+                    console.log(`✅ Position saved successfully for note ${noteId}`);
+                } else {
+                    console.error(`❌ Failed to save position for note ${noteId}:`, response);
+                }
             } else {
-                console.error(`Note ${noteId} not found for position update`);
+                console.error(`❌ Note ${noteId} not found for position update`);
+                console.log(`Available notes:`, this.stickyNotes.map(n => ({ id: n.id, x: n.x, y: n.y })));
             }
         } catch (error) {
-            console.error('Error saving note position:', error);
+            console.error('❌ Error saving note position:', error);
         }
     }
 
