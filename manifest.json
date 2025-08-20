@@ -5,7 +5,9 @@
   "description": "Elegant sticky notes and daily task tracker for your new tab page",
   "permissions": [
     "storage",
-    "notifications"
+    "notifications",
+    "alarms",
+    "activeTab"
   ],
   "background": {
     "service_worker": "background.js"

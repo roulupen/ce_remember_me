@@ -5,6 +5,8 @@ class StickyNotes {
         this.currentEditingNote = null;
         this.draggedNote = null;
         this.util = window.Utility; // Use global utility instance
+        this.isUpdatingStorage = false; // Flag to prevent infinite loops
+        this.lastStorageUpdate = 0; // Timestamp of last storage update
     }
     
     // Utility method to escape HTML content
@@ -71,25 +73,47 @@ class StickyNotes {
 
     async handleNotesStorageChange(notesChange) {
         try {
+            // Prevent handling our own storage changes
+            if (this.isUpdatingStorage) {
+                console.log('Ignoring storage change - caused by current tab');
+                return;
+            }
+
+            // Throttle storage change handling to prevent rapid fire events
+            const now = Date.now();
+            if (now - this.lastStorageUpdate < 100) {
+                console.log('Throttling storage change - too frequent');
+                return;
+            }
+            this.lastStorageUpdate = now;
+
             // Get the new value from storage change
             const newNotes = notesChange.newValue || [];
             const oldNotes = notesChange.oldValue || [];
             
-            console.log('Storage change detected:', {
+            console.log('Storage change detected from another tab:', {
                 oldCount: oldNotes.length,
                 newCount: newNotes.length
             });
 
+            // Only update if there are actual differences
+            const currentNotesJson = JSON.stringify(this.stickyNotes);
+            const newNotesJson = JSON.stringify(newNotes);
+            
+            if (currentNotesJson === newNotesJson) {
+                console.log('No actual changes detected, skipping update');
+                return;
+            }
+
             // Update local notes array
             this.stickyNotes = newNotes;
 
-            // Re-render both views if we're on the notes tab
+            // Re-render views if we're on the notes tab
             if (this.isNotesTabActive()) {
-                this.renderNotesGrid();
-                // Small delay to ensure DOM is ready
+                // Only render floating notes for the Notes tab
                 setTimeout(() => {
                     this.renderFloatingNotes();
-                }, 50);
+                }, 100); // Increased delay to prevent rapid re-renders
             }
 
             // Show notification for significant changes
@@ -128,8 +152,7 @@ class StickyNotes {
                     
                     // Re-render if we're on the notes tab
                     if (this.isNotesTabActive()) {
-                        this.renderNotesGrid();
-                        // Small delay to ensure DOM is ready
+                        // Only render floating notes for the Notes tab
                         setTimeout(() => {
                             this.renderFloatingNotes();
                         }, 50);
@@ -599,8 +622,16 @@ class StickyNotes {
                 
                 console.log(`💾 Note after update:`, { x: note.x, y: note.y, width: note.width, height: note.height });
                 
+                // Set flag to prevent handling our own storage change
+                this.isUpdatingStorage = true;
+                
                 // Save to background storage
                 const response = await this.util.sendMessageToBackground({ action: 'saveNote', note });
+                
+                // Reset flag after a short delay
+                setTimeout(() => {
+                    this.isUpdatingStorage = false;
+                }, 200);
                 
                 if (response.success) {
                     console.log(`✅ Position saved successfully for note ${noteId}`);
@@ -613,6 +644,8 @@ class StickyNotes {
             }
         } catch (error) {
             console.error('❌ Error saving note position:', error);
+            // Reset flag on error
+            this.isUpdatingStorage = false;
         }
     }
 
@@ -673,7 +706,16 @@ class StickyNotes {
         };
 
         try {
+            // Set flag to prevent handling our own storage change
+            this.isUpdatingStorage = true;
+            
             const response = await this.util.sendMessageToBackground({ action: 'saveNote', note });
+            
+            // Reset flag after a short delay
+            setTimeout(() => {
+                this.isUpdatingStorage = false;
+            }, 200);
+            
             if (response.success) {
                 await this.loadFloatingNotes();
                 
@@ -693,6 +735,8 @@ class StickyNotes {
         } catch (error) {
             console.error('Error creating quick note:', error);
             this.util.showError('Failed to create note');
+            // Reset flag on error
+            this.isUpdatingStorage = false;
         }
     }
 
@@ -707,7 +751,12 @@ class StickyNotes {
                 
                 // Always update with latest from storage
                 this.stickyNotes = storageNotes;
-                this.renderNotesGrid();
+                
+                // Check if we have a notes grid (for future tab implementations)
+                const notesGrid = document.getElementById('notes-grid');
+                if (notesGrid) {
+                    this.renderNotesGrid();
+                }
                 
                 // Render floating notes with a small delay to ensure DOM is ready
                 setTimeout(() => {
@@ -721,6 +770,12 @@ class StickyNotes {
 
     renderNotesGrid() {
         const container = document.getElementById('notes-grid');
+        
+        // If notes-grid container doesn't exist, this method shouldn't run
+        if (!container) {
+            console.log('Notes grid container not found, skipping grid render');
+            return;
+        }
         
         if (this.stickyNotes.length === 0) {
             container.innerHTML = '';
@@ -867,13 +922,24 @@ class StickyNotes {
         }
 
         try {
+            // Set flag to prevent handling our own storage change
+            this.isUpdatingStorage = true;
+            
             await this.util.sendMessageToBackground({ action: 'saveNote', note });
+            
+            // Reset flag after a short delay
+            setTimeout(() => {
+                this.isUpdatingStorage = false;
+            }, 200);
+            
             await this.loadFloatingNotes();
             this.closeNoteModal();
             this.util.showSuccess(this.currentEditingNote ? 'Note updated' : 'Note created');
         } catch (error) {
             console.error('Error saving note:', error);
             this.util.showError('Failed to save note');
+            // Reset flag on error
+            this.isUpdatingStorage = false;
         }
     }
 

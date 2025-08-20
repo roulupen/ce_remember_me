@@ -451,6 +451,12 @@ body {
     padding: 0 10px;
 }
 
+.tasks-header-buttons {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
 .tasks-title {
     color: #2c3e50;
     font-size: 28px;
@@ -483,6 +489,159 @@ body {
 
 .add-task-btn:active {
     transform: translateY(0);
+}
+
+/* Task notification highlighting */
+.task-item.notification-ringing {
+    animation: notificationPulse 2s infinite;
+    border: 3px solid #ff6b6b !important;
+    box-shadow: 0 0 20px rgba(255, 107, 107, 0.6);
+    transform: scale(1.02);
+    z-index: 100;
+    position: relative;
+}
+
+.task-item.notification-ringing::before {
+    content: '🔔';
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    font-size: 20px;
+    animation: bounce 1s infinite;
+    background: #ff6b6b;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 10px rgba(255, 107, 107, 0.5);
+}
+
+@keyframes notificationPulse {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(255, 107, 107, 0.6);
+        border-color: #ff6b6b;
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(255, 107, 107, 0.9);
+        border-color: #ff4757;
+    }
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-10px);
+    }
+    60% {
+        transform: translateY(-5px);
+    }
+}
+
+/* Persistent notification banner */
+.notification-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
+    color: white;
+    padding: 15px 20px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 4px 20px rgba(255, 107, 107, 0.4);
+    animation: slideDown 0.5s ease-out;
+}
+
+.notification-banner-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex: 1;
+}
+
+.notification-banner-icon {
+    font-size: 24px;
+    animation: bounce 1s infinite;
+}
+
+.notification-banner-text {
+    flex: 1;
+}
+
+.notification-banner-title {
+    font-weight: bold;
+    font-size: 16px;
+    margin-bottom: 4px;
+}
+
+.notification-banner-subtitle {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.notification-banner-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.notification-banner-time {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.notification-banner-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.notification-banner-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+}
+
+.notification-banner-btn.stop-btn {
+    background: rgba(255, 255, 255, 0.9);
+    color: #ff6b6b;
+}
+
+.notification-banner-btn.stop-btn:hover {
+    background: white;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Adjust main content when banner is visible */
+.tab-content.banner-active {
+    padding-top: 80px;
 }
 
 .tasks-board {
@@ -633,12 +792,19 @@ body {
 .task-actions {
     display: flex;
     gap: 4px;
-    opacity: 0;
+    opacity: 0.7;
     transition: opacity 0.3s ease;
 }
 
 .task-item:hover .task-actions {
     opacity: 1;
+}
+
+/* Ensure buttons are always clickable on touch devices */
+@media (hover: none) {
+    .task-actions {
+        opacity: 1;
+    }
 }
 
 .task-action-btn {
@@ -652,6 +818,11 @@ body {
     justify-content: center;
     font-size: 12px;
     transition: all 0.2s ease;
+    pointer-events: auto;
+    user-select: none;
+    -webkit-user-select: none;
+    position: relative;
+    z-index: 10;
 }
 
 .task-complete-btn {

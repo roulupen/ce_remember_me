@@ -6,6 +6,9 @@ class TaskTracker {
         this.draggedTask = null;
         this.util = window.Utility; // Use global utility instance
         this.reminders = new Map(); // Store active reminders
+        this.ringingTasks = new Set(); // Track locally ringing tasks
+        this.notificationBanner = null; // Current notification banner
+        this.notificationTimer = null; // Timer for banner countdown
         this.dateColumns = {
             'past': null, // Special case for past tasks
             'yesterday': new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
@@ -98,12 +101,34 @@ class TaskTracker {
     }
 
     async setupNotificationPermission() {
-        if ('Notification' in window && Notification.permission === 'default') {
-            try {
-                await Notification.requestPermission();
-            } catch (error) {
-                console.log('Notification permission request failed:', error);
+        try {
+            // Check if notifications are supported
+            if ('Notification' in window) {
+                console.log('🔔 Notification API available, current permission:', Notification.permission);
+                
+                if (Notification.permission === 'default') {
+                    console.log('🔔 Requesting notification permission...');
+                    const permission = await Notification.requestPermission();
+                    console.log('🔔 Notification permission result:', permission);
+                    
+                    if (permission === 'granted') {
+                        this.util.showSuccess('Notifications enabled for task reminders!');
+                    } else if (permission === 'denied') {
+                        this.util.showWarning('Notifications blocked. Task reminders will only show in-app.');
+                    }
+                } else if (Notification.permission === 'granted') {
+                    console.log('✅ Notifications already permitted');
+                } else {
+                    console.log('❌ Notifications denied');
+                    this.util.showWarning('Notifications blocked. Enable them in browser settings for task reminders.');
+                }
+            } else {
+                console.log('❌ Notification API not available');
+                this.util.showWarning('Browser notifications not supported.');
             }
+        } catch (error) {
+            console.error('❌ Error setting up notifications:', error);
+            this.util.showError('Failed to setup notifications: ' + error.message);
         }
     }
 
@@ -134,6 +159,19 @@ class TaskTracker {
             if (response.success) {
                 this.tasks = response.data || [];
                 console.log('Loaded', this.tasks.length, 'tasks from storage');
+                
+                // Debug: Log tasks with reminders
+                this.tasks.forEach(task => {
+                    if (task.reminder) {
+                        console.log('📅 Task with reminder:', {
+                            id: task.id,
+                            title: task.title,
+                            reminder: task.reminder,
+                            reminderDate: new Date(task.reminder)
+                        });
+                    }
+                });
+                
                 this.setupReminders();
             } else {
                 console.error('Failed to load tasks data:', response);
@@ -247,17 +285,17 @@ class TaskTracker {
                 <h4 class="task-title">${this.util.escapeHtml(task.title)}</h4>
                 <div class="task-actions">
                     <button class="task-action-btn task-complete-btn ${task.completed ? 'completed' : ''}" 
-                            onclick="taskTracker.toggleTaskCompletion('${task.id}')"
+                            data-action="toggle-completion" data-task-id="${task.id}"
                             title="${task.completed ? 'Mark as incomplete' : 'Mark as complete'}">
                         ${task.completed ? '↶' : '✓'}
                     </button>
                     <button class="task-action-btn task-edit-btn" 
-                            onclick="taskTracker.editTask('${task.id}')"
+                            data-action="edit-task" data-task-id="${task.id}"
                             title="Edit task">
                         ✏
                     </button>
                     <button class="task-action-btn task-delete-btn" 
-                            onclick="taskTracker.deleteTask('${task.id}')"
+                            data-action="delete-task" data-task-id="${task.id}"
                             title="Delete task">
                         🗑
                     </button>
@@ -269,6 +307,14 @@ class TaskTracker {
 
         // Add drag event listeners
         taskElement.addEventListener('dragstart', (e) => {
+            // Don't allow dragging if the user clicked on an action button
+            if (e.target.classList.contains('task-action-btn') || 
+                e.target.closest('.task-action-btn') || 
+                e.target.closest('.task-actions')) {
+                e.preventDefault();
+                return false;
+            }
+            
             this.draggedTask = task;
             taskElement.classList.add('dragging');
             e.dataTransfer.effectAllowed = 'move';
@@ -278,6 +324,44 @@ class TaskTracker {
         taskElement.addEventListener('dragend', () => {
             taskElement.classList.remove('dragging');
             this.draggedTask = null;
+        });
+
+        // Prevent drag from starting when clicking on action buttons
+        const actionButtons = taskElement.querySelectorAll('.task-action-btn');
+        actionButtons.forEach(button => {
+            button.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+            });
+            
+            button.addEventListener('dragstart', (e) => {
+                e.preventDefault();
+                return false;
+            });
+
+            // Add click event listeners for task actions
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const action = button.getAttribute('data-action');
+                const taskId = button.getAttribute('data-task-id');
+                
+                console.log(`🔘 Task action clicked: ${action} for task ${taskId}`);
+                
+                switch (action) {
+                    case 'toggle-completion':
+                        this.toggleTaskCompletion(taskId);
+                        break;
+                    case 'edit-task':
+                        this.editTask(taskId);
+                        break;
+                    case 'delete-task':
+                        this.deleteTask(taskId);
+                        break;
+                    default:
+                        console.warn('Unknown task action:', action);
+                }
+            });
         });
 
         container.appendChild(taskElement);
@@ -402,18 +486,48 @@ class TaskTracker {
         const reminderInput = modal.querySelector('#task-reminder');
 
         if (task) {
+            console.log('📝 Editing task:', task);
+            console.log('📝 Task reminder value:', task.reminder);
+            console.log('📝 Task reminder type:', typeof task.reminder);
+            
             titleEl.textContent = 'Edit Task';
             titleInput.value = task.title || '';
             descInput.value = task.description || '';
             prioritySelect.value = task.priority || 'medium';
             dateSelect.value = task.dateCategory || 'today';
+            
             if (task.reminder) {
                 const reminderDate = new Date(task.reminder);
-                reminderInput.value = reminderDate.toISOString().slice(0, 16);
+                console.log('📝 Reminder date object:', reminderDate);
+                console.log('📝 Is valid date:', !isNaN(reminderDate.getTime()));
+                
+                if (!isNaN(reminderDate.getTime())) {
+                    // For datetime-local input, we need to format as YYYY-MM-DDTHH:mm
+                    // and account for local timezone
+                    const year = reminderDate.getFullYear();
+                    const month = String(reminderDate.getMonth() + 1).padStart(2, '0');
+                    const day = String(reminderDate.getDate()).padStart(2, '0');
+                    const hours = String(reminderDate.getHours()).padStart(2, '0');
+                    const minutes = String(reminderDate.getMinutes()).padStart(2, '0');
+                    
+                    const localDateTimeString = `${year}-${month}-${day}T${hours}:${minutes}`;
+                    console.log('📝 Setting reminder input to (local time):', localDateTimeString);
+                    reminderInput.value = localDateTimeString;
+                    
+                    // Verify it was set
+                    setTimeout(() => {
+                        console.log('📝 Reminder input value after setting:', reminderInput.value);
+                    }, 100);
+                } else {
+                    console.warn('⚠️ Invalid reminder date, clearing field');
+                    reminderInput.value = '';
+                }
             } else {
+                console.log('📝 No reminder set, clearing field');
                 reminderInput.value = '';
             }
         } else {
+            console.log('📝 Creating new task');
             titleEl.textContent = 'Add Task';
             titleInput.value = '';
             descInput.value = '';
@@ -507,24 +621,36 @@ class TaskTracker {
     }
 
     editTask(taskId) {
+        console.log('🔧 Edit task called for ID:', taskId);
         const task = this.tasks.find(t => t.id === taskId);
         if (task) {
+            console.log('✅ Task found, opening modal:', task.title);
+            console.log('📝 Full task data:', task);
+            console.log('📝 Task reminder specifically:', task.reminder);
             this.openTaskModal(task);
+        } else {
+            console.error('❌ Task not found:', taskId);
+            console.log('Available tasks:', this.tasks.map(t => ({ id: t.id, title: t.title, reminder: t.reminder })));
         }
     }
 
     async deleteTask(taskId) {
+        console.log('🗑️ Delete task called for ID:', taskId);
+        
         if (!confirm('Are you sure you want to delete this task?')) {
+            console.log('❌ User cancelled deletion');
             return;
         }
 
         try {
+            console.log('🔄 Sending delete request to background...');
             const response = await this.util.sendMessageToBackground({ 
                 action: 'deleteTask', 
                 taskId: taskId 
             });
             
             if (response.success) {
+                console.log('✅ Task deleted successfully from storage');
                 // Remove from local array
                 this.tasks = this.tasks.filter(t => t.id !== taskId);
                 
@@ -540,16 +666,22 @@ class TaskTracker {
                 throw new Error(response.error || 'Failed to delete task');
             }
         } catch (error) {
-            console.error('Error deleting task:', error);
+            console.error('❌ Error deleting task:', error);
             this.util.showError('Failed to delete task');
         }
     }
 
     async toggleTaskCompletion(taskId) {
+        console.log('✅ Toggle completion called for ID:', taskId);
+        
         try {
             const task = this.tasks.find(t => t.id === taskId);
-            if (!task) return;
+            if (!task) {
+                console.error('❌ Task not found:', taskId);
+                return;
+            }
 
+            console.log('🔄 Toggling task completion from', task.completed, 'to', !task.completed);
             task.completed = !task.completed;
             task.updatedAt = Date.now();
 
@@ -559,6 +691,7 @@ class TaskTracker {
             });
 
             if (response.success) {
+                console.log('✅ Task completion updated successfully');
                 // Update local array
                 const index = this.tasks.findIndex(t => t.id === taskId);
                 if (index !== -1) {
@@ -571,7 +704,7 @@ class TaskTracker {
                 throw new Error(response.error || 'Failed to update task');
             }
         } catch (error) {
-            console.error('Error toggling task completion:', error);
+            console.error('❌ Error toggling task completion:', error);
             this.util.showError('Failed to update task');
         }
     }
@@ -610,29 +743,70 @@ class TaskTracker {
         }
     }
 
-    showTaskReminder(task) {
-        if ('Notification' in window && Notification.permission === 'granted') {
-            const notification = new Notification('Task Reminder', {
-                body: `Don't forget: ${task.title}`,
-                icon: 'icons/icon48.png',
-                tag: `task-${task.id}`,
-                requireInteraction: true
+    async showTaskReminder(task) {
+        console.log('🔔 Showing task reminder for:', task.title);
+        
+        // Always show in-app notification first
+        this.util.showNotification(`⏰ Task Reminder: ${task.title}`, 'warning', 8000);
+        
+        try {
+            // Use background script for rich Chrome notifications with sound
+            console.log('🔔 Requesting rich notification from background script...');
+            
+            const response = await chrome.runtime.sendMessage({
+                action: 'showTaskNotification',
+                task: task
             });
-
-            notification.onclick = () => {
-                window.focus();
-                this.switchTab('tasks-tab');
-                notification.close();
-            };
-
-            // Auto-close after 10 seconds
-            setTimeout(() => {
-                notification.close();
-            }, 10000);
+            
+            if (response.success) {
+                console.log('✅ Rich notification requested successfully');
+            } else {
+                console.error('❌ Failed to request rich notification:', response.error);
+                this.fallbackToWebNotification(task);
+            }
+            
+        } catch (error) {
+            console.error('❌ Error requesting rich notification:', error);
+            this.fallbackToWebNotification(task);
         }
+    }
 
-        // Also show in-app notification
-        this.util.showNotification(`Task Reminder: ${task.title}`, 'warning', 5000);
+    // Fallback to web notification if background notification fails
+    fallbackToWebNotification(task) {
+        console.log('🔔 Using fallback web notification...');
+        
+        if ('Notification' in window && Notification.permission === 'granted') {
+            try {
+                const notification = new Notification('⏰ Task Reminder', {
+                    body: `Don't forget: ${task.title}`,
+                    icon: '/icons/icon48.png',
+                    tag: `task-${task.id}`,
+                    requireInteraction: true,
+                    silent: false
+                });
+
+                notification.onclick = () => {
+                    console.log('🔔 Fallback notification clicked');
+                    window.focus();
+                    this.switchTab('tasks-tab');
+                    notification.close();
+                };
+
+                // Auto-close after 10 seconds
+                setTimeout(() => {
+                    try {
+                        notification.close();
+                    } catch (e) {
+                        // Ignore error if already closed
+                    }
+                }, 10000);
+                
+            } catch (error) {
+                console.error('❌ Failed to create fallback notification:', error);
+            }
+        } else {
+            console.log('🔔 Web notifications not available or not permitted');
+        }
     }
 
     formatReminderTime(timestamp) {
@@ -664,6 +838,395 @@ class TaskTracker {
     isTasksTabActive() {
         const tasksTab = document.getElementById('tasks-tab');
         return tasksTab && tasksTab.classList.contains('active');
+    }
+
+    // Test notification method for debugging
+    async testNotification() {
+        console.log('🧪 Testing rich notification system...');
+        const testTask = {
+            id: 'test-' + Date.now(),
+            title: 'Test Rich Notification with Sound',
+            description: 'This is a test of the new notification system with 30-second sound',
+            reminder: Date.now() + (2 * 60 * 1000) // 2 minutes from now
+        };
+        
+        // Add to tasks array for testing
+        this.tasks.push(testTask);
+        
+        // Save the test task
+        try {
+            const response = await this.util.sendMessageToBackground({ 
+                action: 'saveTask', 
+                task: testTask 
+            });
+            
+            if (response.success) {
+                console.log('✅ Test task saved with reminder');
+                this.util.showSuccess('Test task created with 2-minute reminder. Try editing it to test reminder field.');
+                await this.loadTasksData(); // Refresh to show the new task
+            }
+        } catch (error) {
+            console.error('❌ Error saving test task:', error);
+        }
+    }
+
+    // Test simple Chrome notification
+    async testSimpleNotification() {
+        console.log('🧪 Testing simple Chrome notification...');
+        
+        try {
+            // First check permissions
+            await this.checkNotificationDiagnostics();
+            
+            const response = await chrome.runtime.sendMessage({
+                action: 'testSimpleNotification'
+            });
+            
+            if (response.success) {
+                console.log('✅ Simple notification test requested successfully');
+                this.util.showSuccess('Simple notification test sent to background script');
+            } else {
+                console.error('❌ Failed to request simple notification test:', response.error);
+                this.util.showError('Failed to test simple notification: ' + response.error);
+            }
+            
+        } catch (error) {
+            console.error('❌ Error requesting simple notification test:', error);
+            this.util.showError('Error testing simple notification: ' + error.message);
+        }
+    }
+
+    // Test basic connection to background script
+    async testConnection() {
+        console.log('🧪 Testing connection to background script...');
+        
+        try {
+            // Check if chrome.runtime is available
+            console.log('🔍 Chrome runtime available:', !!chrome.runtime);
+            console.log('🔍 Chrome runtime ID:', chrome.runtime.id);
+            
+            // Try to wake up the service worker first
+            console.log('🔄 Attempting to wake service worker...');
+            
+            console.log('📤 Sending testConnection message...');
+            
+            const response = await chrome.runtime.sendMessage({
+                action: 'testConnection'
+            });
+            
+            console.log('📡 Raw connection test response:', response);
+            console.log('📡 Response type:', typeof response);
+            console.log('📡 Response success property:', response?.success);
+            console.log('📡 Response error property:', response?.error);
+            console.log('📡 Response message property:', response?.message);
+            
+            if (response && response.success) {
+                console.log('✅ Background script connection successful');
+                this.util.showSuccess('Background script connected: ' + (response.message || 'OK'));
+                
+                // Now test notification
+                await this.testSimpleNotification();
+            } else if (response && response.error) {
+                console.error('❌ Background script connection failed:', response.error);
+                this.util.showError('Connection failed: ' + response.error);
+            } else if (response === undefined) {
+                console.error('❌ No response from background script (service worker may be inactive)');
+                this.util.showError('No response - service worker may be inactive. Try reloading the extension.');
+            } else {
+                console.error('❌ Unexpected response format:', response);
+                this.util.showError('Unexpected response: ' + JSON.stringify(response));
+            }
+            
+        } catch (error) {
+            console.error('❌ Error testing connection:', error);
+            console.error('❌ Error details:', error.message, error.stack);
+            
+            if (error.message.includes('Extension context invalidated')) {
+                this.util.showError('Extension context invalidated - reload the extension');
+            } else if (error.message.includes('Could not establish connection')) {
+                this.util.showError('Could not connect to background script - service worker may be inactive');
+            } else {
+                this.util.showError('Connection error: ' + error.message);
+            }
+        }
+    }
+
+    // Comprehensive notification diagnostics
+    async checkNotificationDiagnostics() {
+        console.log('🔍 Running notification diagnostics...');
+        
+        try {
+            // Check background script permissions
+            const response = await chrome.runtime.sendMessage({
+                action: 'checkNotificationPermissions'
+            });
+            
+            if (response.success) {
+                console.log('🔍 Background script permission check:', response.data);
+                
+                // Check frontend notification API
+                const frontendStatus = {
+                    notificationAPI: 'Notification' in window,
+                    permission: window.Notification ? window.Notification.permission : 'not available',
+                    chromeRuntime: !!chrome.runtime,
+                    chromeNotifications: !!chrome.notifications
+                };
+                
+                console.log('🔍 Frontend notification status:', frontendStatus);
+                
+                // Combine results and show summary
+                const summary = `
+🔍 **Notification Diagnostics**:
+- Chrome notifications API: ${response.data.chromeNotificationsAPI ? '✅' : '❌'}
+- Manifest permission: ${response.data.hasNotificationPermission ? '✅' : '❌'}
+- Web Notification API: ${frontendStatus.notificationAPI ? '✅' : '❌'}
+- Web permission: ${frontendStatus.permission}
+- Chrome runtime: ${frontendStatus.chromeRuntime ? '✅' : '❌'}
+                `;
+                
+                console.log(summary);
+                this.util.showNotification('Check console for detailed diagnostics', 'info', 5000);
+                
+            } else {
+                console.error('❌ Failed to check permissions:', response.error);
+            }
+            
+        } catch (error) {
+            console.error('❌ Error running diagnostics:', error);
+        }
+    }
+
+    // Handle task ringing started
+    handleTaskRingingStarted(message) {
+        console.log('🔔 Handling task ringing started:', message.taskId);
+        
+        const { taskId, task, notificationId } = message;
+        
+        // Add to ringing tasks
+        this.ringingTasks.add(taskId);
+        
+        // Highlight the task
+        this.highlightRingingTask(taskId);
+        
+        // Show notification banner
+        this.showNotificationBanner(task, notificationId);
+        
+        // Switch to tasks tab if not already there
+        if (!this.isTasksTabActive()) {
+            this.switchTab('tasks-tab');
+        }
+    }
+
+    // Handle task ringing stopped
+    handleTaskRingingStopped(message) {
+        console.log('🔕 Handling task ringing stopped:', message.taskId);
+        
+        const { taskId } = message;
+        
+        // Remove from ringing tasks
+        this.ringingTasks.delete(taskId);
+        
+        // Remove highlight
+        this.removeTaskHighlight(taskId);
+        
+        // Hide notification banner
+        this.hideNotificationBanner();
+    }
+
+    // Highlight ringing task
+    highlightRingingTask(taskId) {
+        console.log('✨ Highlighting ringing task:', taskId);
+        
+        const taskElement = document.querySelector(`[data-task-id="${taskId}"]`);
+        if (taskElement) {
+            taskElement.classList.add('notification-ringing');
+            
+            // Scroll task into view
+            taskElement.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+        }
+    }
+
+    // Remove task highlight
+    removeTaskHighlight(taskId) {
+        console.log('🔄 Removing highlight from task:', taskId);
+        
+        const taskElement = document.querySelector(`[data-task-id="${taskId}"]`);
+        if (taskElement) {
+            taskElement.classList.remove('notification-ringing');
+        }
+    }
+
+    // Show notification banner
+    showNotificationBanner(task, notificationId) {
+        console.log('📢 Showing notification banner for:', task.title);
+        
+        // Remove existing banner
+        this.hideNotificationBanner();
+        
+        // Create banner HTML
+        const banner = document.createElement('div');
+        banner.className = 'notification-banner';
+        banner.innerHTML = `
+            <div class="notification-banner-content">
+                <div class="notification-banner-icon">🔔</div>
+                <div class="notification-banner-text">
+                    <div class="notification-banner-title">Task Reminder</div>
+                    <div class="notification-banner-subtitle">${this.util.escapeHtml(task.title)}</div>
+                </div>
+            </div>
+            <div class="notification-banner-actions">
+                <div class="notification-banner-time" id="banner-countdown">30s</div>
+                <button class="notification-banner-btn" data-action="complete" data-task-id="${task.id}">
+                    ✓ Mark Done
+                </button>
+                <button class="notification-banner-btn" data-action="snooze" data-task-id="${task.id}">
+                    ⏰ Snooze 5min
+                </button>
+                <button class="notification-banner-btn stop-btn" data-action="stop" data-task-id="${task.id}">
+                    🔇 Stop Sound
+                </button>
+            </div>
+        `;
+        
+        // Add event listeners to banner buttons
+        banner.querySelectorAll('.notification-banner-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const action = btn.getAttribute('data-action');
+                const taskId = btn.getAttribute('data-task-id');
+                this.handleBannerAction(action, taskId);
+            });
+        });
+        
+        // Add banner to page
+        document.body.appendChild(banner);
+        this.notificationBanner = banner;
+        
+        // Add padding to main content
+        const tabContent = document.querySelector('.tab-content.active');
+        if (tabContent) {
+            tabContent.classList.add('banner-active');
+        }
+        
+        // Start countdown timer
+        this.startBannerCountdown(30);
+    }
+
+    // Hide notification banner
+    hideNotificationBanner() {
+        if (this.notificationBanner) {
+            console.log('📢 Hiding notification banner');
+            
+            this.notificationBanner.remove();
+            this.notificationBanner = null;
+            
+            // Remove padding from main content
+            const tabContent = document.querySelector('.tab-content.active');
+            if (tabContent) {
+                tabContent.classList.remove('banner-active');
+            }
+            
+            // Clear countdown timer
+            if (this.notificationTimer) {
+                clearInterval(this.notificationTimer);
+                this.notificationTimer = null;
+            }
+        }
+    }
+
+    // Start banner countdown
+    startBannerCountdown(seconds) {
+        let remaining = seconds;
+        const countdownEl = document.getElementById('banner-countdown');
+        
+        this.notificationTimer = setInterval(() => {
+            remaining--;
+            if (countdownEl) {
+                countdownEl.textContent = `${remaining}s`;
+            }
+            
+            if (remaining <= 0) {
+                this.hideNotificationBanner();
+            }
+        }, 1000);
+    }
+
+    // Handle banner button actions
+    async handleBannerAction(action, taskId) {
+        console.log('🎯 Banner action:', action, 'for task:', taskId);
+        
+        try {
+            switch (action) {
+                case 'complete':
+                    await this.toggleTaskCompletion(taskId);
+                    this.hideNotificationBanner();
+                    break;
+                    
+                case 'snooze':
+                    await this.snoozeTask(taskId, 5); // 5 minutes
+                    this.hideNotificationBanner();
+                    break;
+                    
+                case 'stop':
+                    await this.stopTaskNotificationSound(taskId);
+                    this.hideNotificationBanner();
+                    break;
+            }
+        } catch (error) {
+            console.error('❌ Error handling banner action:', error);
+        }
+    }
+
+    // Stop notification sound for specific task
+    async stopTaskNotificationSound(taskId) {
+        console.log('🔇 Stopping notification sound for task:', taskId);
+        
+        try {
+            const response = await chrome.runtime.sendMessage({
+                action: 'stopNotificationSound',
+                taskId: taskId
+            });
+            
+            if (response.success) {
+                console.log('✅ Notification sound stopped successfully');
+                this.util.showSuccess('Notification sound stopped');
+            } else {
+                console.error('❌ Failed to stop notification sound:', response.error);
+            }
+        } catch (error) {
+            console.error('❌ Error stopping notification sound:', error);
+        }
+    }
+
+    // Snooze task for specified minutes
+    async snoozeTask(taskId, minutes) {
+        console.log('⏰ Snoozing task for', minutes, 'minutes:', taskId);
+        
+        const task = this.tasks.find(t => t.id === taskId);
+        if (task) {
+            task.reminder = Date.now() + (minutes * 60 * 1000);
+            task.updatedAt = Date.now();
+            
+            try {
+                const response = await chrome.runtime.sendMessage({
+                    action: 'updateTask',
+                    task: task
+                });
+                
+                if (response.success) {
+                    console.log('✅ Task snoozed successfully');
+                    this.util.showSuccess(`Task snoozed for ${minutes} minutes`);
+                    await this.loadTasksData(); // Refresh display
+                } else {
+                    console.error('❌ Failed to snooze task:', response.error);
+                }
+            } catch (error) {
+                console.error('❌ Error snoozing task:', error);
+            }
+        }
     }
 }
 
