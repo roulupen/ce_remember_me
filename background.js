@@ -2,6 +2,7 @@
 class StickyNotesBackground {
     constructor() {
         this.stickyNotes = [];
+        this.tasks = [];
         this.init();
     }
 
@@ -10,6 +11,7 @@ class StickyNotesBackground {
         chrome.runtime.onInstalled.addListener(() => {
             console.log('Sticky Notes extension installed');
             this.loadNotesFromStorage();
+            this.loadTasksFromStorage();
         });
 
         // Listen for messages from content scripts and popup
@@ -18,8 +20,9 @@ class StickyNotesBackground {
             return true; // Keep the message channel open for async responses
         });
 
-        // Load notes on startup
+        // Load notes and tasks on startup
         this.loadNotesFromStorage();
+        this.loadTasksFromStorage();
     }
 
     async handleMessage(message, sender, sendResponse) {
@@ -64,6 +67,32 @@ class StickyNotesBackground {
 
                 case 'updateNoteTitle':
                     await this.updateNoteTitle(message.noteId, message.title);
+                    sendResponse({ success: true });
+                    break;
+
+                // Task management actions
+                case 'saveTask':
+                    await this.saveTask(message.task);
+                    sendResponse({ success: true });
+                    break;
+
+                case 'getTasks':
+                    const tasks = await this.getTasks();
+                    sendResponse({ success: true, data: tasks });
+                    break;
+
+                case 'updateTask':
+                    await this.updateTask(message.task);
+                    sendResponse({ success: true });
+                    break;
+
+                case 'deleteTask':
+                    await this.deleteTask(message.taskId);
+                    sendResponse({ success: true });
+                    break;
+
+                case 'clearAllTasks':
+                    await this.clearAllTasks();
                     sendResponse({ success: true });
                     break;
 
@@ -202,6 +231,90 @@ class StickyNotesBackground {
             }
         } catch (error) {
             console.error('Error updating note title:', error);
+            throw error;
+        }
+    }
+
+    // Task management methods
+    async loadTasksFromStorage() {
+        try {
+            const result = await chrome.storage.local.get(['tasks']);
+            this.tasks = result.tasks || [];
+            console.log('Loaded', this.tasks.length, 'tasks from storage');
+        } catch (error) {
+            console.error('Error loading tasks from storage:', error);
+            this.tasks = [];
+        }
+    }
+
+    async saveTask(task) {
+        try {
+            // Check if task already exists
+            const existingIndex = this.tasks.findIndex(t => t.id === task.id);
+            
+            if (existingIndex !== -1) {
+                // Update existing task
+                const updatedTask = { 
+                    ...this.tasks[existingIndex], 
+                    ...task, 
+                    updatedAt: Date.now() 
+                };
+                this.tasks[existingIndex] = updatedTask;
+            } else {
+                // Add new task with timestamps
+                const newTask = {
+                    ...task,
+                    id: task.id || Date.now().toString(),
+                    createdAt: Date.now(),
+                    updatedAt: Date.now()
+                };
+                this.tasks.push(newTask);
+            }
+
+            await chrome.storage.local.set({ tasks: this.tasks });
+            console.log('Task saved:', task.id);
+        } catch (error) {
+            console.error('Error saving task:', error);
+            throw error;
+        }
+    }
+
+    async getTasks() {
+        return this.tasks;
+    }
+
+    async updateTask(task) {
+        try {
+            const existingIndex = this.tasks.findIndex(t => t.id === task.id);
+            if (existingIndex !== -1) {
+                this.tasks[existingIndex] = { ...task, updatedAt: Date.now() };
+                await chrome.storage.local.set({ tasks: this.tasks });
+                console.log('Task updated:', task.id);
+            }
+        } catch (error) {
+            console.error('Error updating task:', error);
+            throw error;
+        }
+    }
+
+    async deleteTask(taskId) {
+        try {
+            this.tasks = this.tasks.filter(task => task.id !== taskId);
+            await chrome.storage.local.set({ tasks: this.tasks });
+            console.log('Task deleted:', taskId);
+        } catch (error) {
+            console.error('Error deleting task:', error);
+            throw error;
+        }
+    }
+
+    async clearAllTasks() {
+        try {
+            this.tasks = [];
+            await chrome.storage.local.set({ tasks: [] });
+            console.log('All tasks cleared');
+        } catch (error) {
+            console.error('Error clearing tasks:', error);
             throw error;
         }
     }

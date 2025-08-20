@@ -1,16 +1,17 @@
 {
   "manifest_version": 3,
-  "name": "Sticky Notes",
-  "version": "1.0.0",
-  "description": "Simple and elegant sticky notes for your new tab page",
+  "name": "Productivity Hub",
+  "version": "2.0.0",
+  "description": "Elegant sticky notes and daily task tracker for your new tab page",
   "permissions": [
-    "storage"
+    "storage",
+    "notifications"
   ],
   "background": {
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "Sticky Notes",
+    "default_title": "Productivity Hub",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png",
