@@ -18,9 +18,16 @@ class StickyNotes {
 
     // Initialize sticky notes functionality
     async init() {
-        this.setupEventListeners();
-        await this.loadNotesData();
-        await this.setupStorageListener();
+        console.log('[StickyNotes] Initializing...');
+        try {
+            this.setupEventListeners();
+            await this.loadNotesData();
+            await this.setupStorageListener();
+            console.log('[StickyNotes] Initialization complete');
+        } catch (error) {
+            console.error('[StickyNotes] Initialization failed:', error);
+            throw error;
+        }
     }
 
     setupEventListeners() {
@@ -183,67 +190,135 @@ class StickyNotes {
     // Windows-style Floating Sticky Notes
     async loadFloatingNotes() {
         try {
-            console.log('Loading floating notes from storage...');
+            console.log('[StickyNotes] Loading floating notes from storage...');
             const response = await this.util.sendMessageToBackground({ action: 'getNotes' });
-            console.log('Background response:', response);
+            console.log('[StickyNotes] Background response:', response);
             
             if (response.success) {
-                const storageNotes = response.data;
-                console.log('Loaded', storageNotes.length, 'sticky notes from storage:', storageNotes);
+                const storageNotes = response.data || [];
+                console.log('[StickyNotes] Loaded', storageNotes.length, 'sticky notes from storage');
                 
                 // Log position data for debugging
                 storageNotes.forEach(note => {
-                    console.log(`Note ${note.id} position:`, { x: note.x, y: note.y, width: note.width, height: note.height });
+                    console.log(`[StickyNotes] Note ${note.id} position:`, { x: note.x, y: note.y, width: note.width, height: note.height });
                 });
                 
                 // Always update with latest from storage
                 this.stickyNotes = storageNotes;
                 
-                // Add debugging for container availability
-                const container = document.getElementById('notes-floating-container');
-                console.log('Container available:', !!container);
-                console.log('Notes tab active:', this.isNotesTabActive());
+                // Wait for container to be available
+                await this.waitForContainer();
                 
-                this.renderFloatingNotes();
+                // Always render floating notes during initialization
+                this.renderFloatingNotes(true);
+                
+                console.log('[StickyNotes] Floating notes loaded and rendered successfully');
             } else {
-                console.error('Failed to load notes:', response);
+                console.error('[StickyNotes] Failed to load notes:', response);
+                this.stickyNotes = [];
             }
         } catch (error) {
-            console.error('Error loading floating notes:', error);
+            console.error('[StickyNotes] Error loading floating notes:', error);
+            this.stickyNotes = [];
+            throw error;
         }
     }
 
-    renderFloatingNotes() {
-        console.log('Rendering floating notes...');
+    // Wait for container to be available
+    async waitForContainer(maxAttempts = 10) {
+        for (let i = 0; i < maxAttempts; i++) {
+            const container = document.getElementById('notes-floating-container');
+            if (container) {
+                console.log('[StickyNotes] Container found on attempt', i + 1);
+                return container;
+            }
+            
+            console.log('[StickyNotes] Container not found, waiting... (attempt', i + 1, '/', maxAttempts, ')');
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        console.error('[StickyNotes] Container not found after', maxAttempts, 'attempts');
+        throw new Error('Notes container not found');
+    }
+
+    renderFloatingNotes(forceRender = false) {
+        console.log('[StickyNotes] Rendering floating notes...', forceRender ? '(forced)' : '');
         const container = document.getElementById('notes-floating-container');
         
         if (!container) {
-            console.log('Notes floating container not found, will retry when notes tab is active');
+            console.log('[StickyNotes] Notes floating container not found');
             return;
         }
 
-        // Check if container is visible (notes tab is active)
-        if (!this.isNotesTabActive()) {
-            console.log('Notes tab not active, skipping render');
+        // During initialization or when forced, always render. Otherwise check tab state
+        if (!forceRender && !this.isNotesTabActive()) {
+            console.log('[StickyNotes] Notes tab not active, skipping render');
             return;
         }
 
+        // Check if notes are already rendered to avoid unnecessary re-renders
+        const existingNotes = container.querySelectorAll('.windows-sticky-note');
+        if (!forceRender && existingNotes.length === this.stickyNotes.length && this.stickyNotes.length > 0) {
+            console.log('[StickyNotes] Notes already rendered, checking if all present...');
+            let allPresent = true;
+            for (const note of this.stickyNotes) {
+                if (!container.querySelector(`[data-note-id="${note.id}"]`)) {
+                    allPresent = false;
+                    break;
+                }
+            }
+            if (allPresent) {
+                console.log('[StickyNotes] All notes present, skipping re-render');
+                return;
+            }
+        }
+
+        console.log('[StickyNotes] Clearing container and rendering', this.stickyNotes.length, 'notes');
+        
+        // Backup current positions from DOM before clearing
+        this.backupCurrentPositions(container);
+        
         container.innerHTML = '';
-        console.log('Rendering', this.stickyNotes.length, 'notes to container');
 
         // Ensure all notes have valid position data before rendering
         this.validateNotePositions();
 
         this.stickyNotes.forEach((note, index) => {
             try {
-                console.log(`Rendering note ${index + 1}/${this.stickyNotes.length}:`, note.id, note);
+                console.log(`[StickyNotes] Rendering note ${index + 1}/${this.stickyNotes.length}:`, note.id);
                 this.createFloatingNote(note);
             } catch (error) {
-                console.error(`Error rendering note ${note.id}:`, error, note);
+                console.error(`[StickyNotes] Error rendering note ${note.id}:`, error, note);
             }
         });
         
-        console.log('Finished rendering all notes');
+        console.log('[StickyNotes] Finished rendering all notes');
+    }
+
+    // Backup current positions from DOM before clearing
+    backupCurrentPositions(container) {
+        const existingNotes = container.querySelectorAll('.windows-sticky-note');
+        console.log('[StickyNotes] Backing up positions for', existingNotes.length, 'existing notes');
+        
+        existingNotes.forEach(noteElement => {
+            const noteId = noteElement.dataset.noteId;
+            const note = this.stickyNotes.find(n => n.id == noteId);
+            
+            if (note) {
+                const currentX = parseInt(noteElement.style.left) || note.x;
+                const currentY = parseInt(noteElement.style.top) || note.y;
+                const currentWidth = parseInt(noteElement.style.width) || note.width;
+                const currentHeight = parseInt(noteElement.style.height) || note.height;
+                
+                // Update note data with current DOM positions
+                note.x = currentX;
+                note.y = currentY;
+                note.width = currentWidth;
+                note.height = currentHeight;
+                
+                console.log(`[StickyNotes] Backed up position for note ${noteId}:`, { x: currentX, y: currentY, width: currentWidth, height: currentHeight });
+            }
+        });
     }
 
     validateNotePositions() {
@@ -251,29 +326,47 @@ class StickyNotes {
         if (!container) return;
 
         this.stickyNotes.forEach(note => {
-            // Check if note has valid position data - be more strict about what constitutes valid data
-            if (note.x === undefined || note.y === undefined || note.x === null || note.y === null || 
-                typeof note.x !== 'number' || typeof note.y !== 'number') {
-                console.log(`Note ${note.id} missing or invalid position data, assigning default position`);
-                console.log(`Current position data:`, { x: note.x, y: note.y, width: note.width, height: note.height });
+            // Convert string positions to numbers if needed (from storage)
+            if (typeof note.x === 'string' && !isNaN(note.x)) {
+                note.x = parseFloat(note.x);
+            }
+            if (typeof note.y === 'string' && !isNaN(note.y)) {
+                note.y = parseFloat(note.y);
+            }
+            if (typeof note.width === 'string' && !isNaN(note.width)) {
+                note.width = parseFloat(note.width);
+            }
+            if (typeof note.height === 'string' && !isNaN(note.height)) {
+                note.height = parseFloat(note.height);
+            }
+
+            // Only assign new position if data is truly missing or invalid
+            const hasValidPosition = (
+                note.x !== undefined && note.x !== null && !isNaN(note.x) &&
+                note.y !== undefined && note.y !== null && !isNaN(note.y)
+            );
+
+            if (!hasValidPosition) {
+                console.log(`[StickyNotes] Note ${note.id} missing position data, assigning default position`);
+                console.log(`[StickyNotes] Current position data:`, { x: note.x, y: note.y, width: note.width, height: note.height });
                 
-                // Generate new position
+                // Generate new position only for truly missing data
                 note.x = Math.random() * (window.innerWidth - 220) + 10;
                 note.y = Math.random() * ((window.innerHeight - 80) - 190) + 10;
                 note.width = note.width || 200;
                 note.height = note.height || 200;
                 
-                console.log(`Assigned new position for note ${note.id}:`, { x: note.x, y: note.y });
+                console.log(`[StickyNotes] Assigned new position for note ${note.id}:`, { x: note.x, y: note.y });
                 
-                // Save the assigned position
+                // Save the assigned position (but don't await to avoid blocking rendering)
                 this.saveNotePosition(note.id, {
                     x: note.x,
                     y: note.y,
                     width: note.width,
                     height: note.height
-                });
+                }).catch(error => console.error('Error saving generated position:', error));
             } else {
-                console.log(`Note ${note.id} has valid position data:`, { x: note.x, y: note.y, width: note.width, height: note.height });
+                console.log(`[StickyNotes] Note ${note.id} has valid position data:`, { x: note.x, y: note.y, width: note.width, height: note.height });
             }
         });
     }
@@ -285,25 +378,27 @@ class StickyNotes {
         noteElement.className = `windows-sticky-note ${note.color || 'yellow'}`;
         noteElement.dataset.noteId = note.id;
         
-        // Use stored position data, or calculate default position only if not stored
-        let x, y;
-        console.log(`Creating floating note ${note.id} with position data:`, { x: note.x, y: note.y, width: note.width, height: note.height });
+        // Use stored position data - positions should already be validated by validateNotePositions
+        let x = note.x;
+        let y = note.y;
         
-        if (note.x !== undefined && note.y !== undefined && typeof note.x === 'number' && typeof note.y === 'number') {
-            // Use exact stored position
-            x = note.x;
-            y = note.y;
-            console.log(`✓ Using stored position for note ${note.id}:`, { x, y });
-        } else {
-            // Only generate random position for truly new notes
-            x = Math.random() * (window.innerWidth - 220) + 10;
-            y = Math.random() * ((window.innerHeight - 80) - 190) + 10;
-            console.log(`⚠ Generated new position for note ${note.id}:`, { x, y });
-            console.log(`⚠ Reason: x=${note.x} (${typeof note.x}), y=${note.y} (${typeof note.y})`);
-            
-            // Save the generated position immediately
-            this.saveNotePosition(note.id, { x, y });
+        console.log(`[StickyNotes] Creating floating note ${note.id} with position:`, { x, y, width: note.width, height: note.height });
+        
+        // Ensure positions are numbers (should already be handled by validation)
+        if (typeof x === 'string') x = parseFloat(x);
+        if (typeof y === 'string') y = parseFloat(y);
+        
+        // Final safety check - if still invalid, use safe defaults
+        if (isNaN(x) || x === null || x === undefined) {
+            x = 50;
+            console.warn(`[StickyNotes] Using fallback X position for note ${note.id}`);
         }
+        if (isNaN(y) || y === null || y === undefined) {
+            y = 50;
+            console.warn(`[StickyNotes] Using fallback Y position for note ${note.id}`);
+        }
+        
+        console.log(`[StickyNotes] ✓ Final position for note ${note.id}:`, { x, y });
         
         const width = note.width || 200;
         const height = note.height || 200;

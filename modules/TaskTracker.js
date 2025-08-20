@@ -20,10 +20,17 @@ class TaskTracker {
 
     // Initialize task tracker functionality
     async init() {
-        this.setupEventListeners();
-        await this.loadTasksData();
-        this.setupDateHeaders();
-        this.setupNotificationPermission();
+        console.log('[TaskTracker] Initializing...');
+        try {
+            this.setupEventListeners();
+            await this.loadTasksData();
+            this.setupDateHeaders();
+            this.setupNotificationPermission();
+            console.log('[TaskTracker] Initialization complete');
+        } catch (error) {
+            console.error('[TaskTracker] Initialization failed:', error);
+            throw error;
+        }
     }
 
     setupEventListeners() {
@@ -133,21 +140,30 @@ class TaskTracker {
     }
 
     switchTab(tabId) {
+        console.log('[TaskTracker] Switching to tab:', tabId);
+        
         // Update tab buttons
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.classList.remove('active');
         });
-        document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+        document.querySelector(`[data-tab="${tabId}"]`)?.classList.add('active');
 
         // Update tab content
         document.querySelectorAll('.tab-content').forEach(content => {
             content.classList.remove('active');
         });
-        document.getElementById(tabId).classList.add('active');
+        document.getElementById(tabId)?.classList.add('active');
 
-        // Load tasks if switching to tasks tab
+        // Render appropriate content based on tab
         if (tabId === 'tasks-tab') {
+            console.log('[TaskTracker] Rendering tasks for tasks tab');
             this.renderTasks();
+        } else if (tabId === 'notes-tab') {
+            console.log('[TaskTracker] Switched to notes tab, ensuring notes are rendered');
+            // Ensure notes are rendered when switching to notes tab
+            if (window.stickyNotes && window.stickyNotes.stickyNotes) {
+                window.stickyNotes.renderFloatingNotes(true); // Force render when switching tabs
+            }
         }
     }
 
