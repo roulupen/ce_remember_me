@@ -338,6 +338,8 @@ body.light-theme .clean-bookmark-item {
     background: rgba(255, 255, 255, 0.8) !important;
     border: 1px solid rgba(0, 0, 0, 0.1) !important;
     color: var(--text-primary) !important;
+    padding: 6px 8px !important;
+    min-height: 28px !important;
 }
 
 body.light-theme .clean-bookmark-item:hover {
@@ -458,18 +460,33 @@ body.light-theme .group-actions button:hover {
     transform: translateY(-1px) scale(1.05) !important;
 }
 
-/* Light theme edit mode elements */
+/* Light theme edit mode elements - Compact */
 body.light-theme .bookmark-input-label,
 body.light-theme .group-input-label {
     color: var(--text-secondary) !important;
+    font-size: 9px !important;
 }
 
 body.light-theme .bookmark-edit-mode,
 body.light-theme .group-edit-mode {
     background: rgba(255, 255, 255, 0.95) !important;
-    padding: 8px !important;
-    border-radius: 6px !important;
+    padding: 4px !important;
+    border-radius: 4px !important;
     border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Compact action buttons for light theme */
+body.light-theme .bookmark-actions button,
+body.light-theme .group-actions button {
+    width: 22px !important;
+    height: 22px !important;
+    border-radius: 3px !important;
+}
+
+body.light-theme .bookmark-edit-actions .bookmark-save-btn,
+body.light-theme .bookmark-edit-actions .bookmark-cancel-btn {
+    padding: 4px 8px !important;
+    font-size: 10px !important;
 }
 
 /* Light theme tooltip fix */
@@ -2253,6 +2270,55 @@ body.dark-theme .clear-notes-fab {
     cursor: grabbing;
 }
 
+/* Drag indicator for bookmark items */
+.clean-bookmark-item[draggable="true"]:hover {
+    cursor: grab;
+}
+
+.clean-bookmark-item[draggable="true"]:active {
+    cursor: grabbing;
+}
+
+/* Enhanced reordering feedback */
+.clean-bookmarks-list.drag-over .clean-bookmark-item:not(.dragging):hover {
+    background: rgba(52, 152, 219, 0.1) !important;
+    border-color: rgba(52, 152, 219, 0.3) !important;
+    transform: translateX(4px) !important;
+    cursor: pointer !important;
+}
+
+.clean-bookmarks-list.drag-over .clean-bookmark-item:not(.dragging)::before {
+    content: '📍 Drop here';
+    position: absolute;
+    top: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(52, 152, 219, 0.9);
+    color: white;
+    padding: 1px 4px;
+    border-radius: 2px;
+    font-size: 8px;
+    font-weight: 500;
+    white-space: nowrap;
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+}
+
+.clean-bookmarks-list.drag-over .clean-bookmark-item:not(.dragging):hover::before {
+    opacity: 1;
+}
+
+/* Theme-aware reordering hints */
+body.dark-theme .clean-bookmarks-list.drag-over .clean-bookmark-item:not(.dragging)::before {
+    background: rgba(93, 173, 226, 0.9);
+}
+
+body.light-theme .clean-bookmarks-list.drag-over .clean-bookmark-item:not(.dragging)::before {
+    background: rgba(52, 152, 219, 0.9);
+}
+
 /* Collapsed sidebar tab items - show only favicon */
 .bookmarks-sidebar.collapsed .sidebar-tab-item {
     padding: 8px;
@@ -2439,9 +2505,9 @@ body.dark-theme .clear-notes-fab {
     background: rgba(255, 255, 255, 0.12);
 }
 
-/* Clean Group Header */
+/* Clean Group Header - Compact design */
 .clean-group-header {
-    padding: 12px 16px;
+    padding: 8px 12px;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -2469,26 +2535,26 @@ body.dark-theme .clear-notes-fab {
 
 .group-title-display {
     color: rgba(255, 255, 255, 0.9);
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
-    line-height: 1.3;
+    line-height: 1.2;
     cursor: pointer;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     flex: 1;
     min-width: 0;
-    margin-right: 8px;
+    margin-right: 6px;
 }
 
 .group-stats {
     background: rgba(255, 255, 255, 0.15);
     color: rgba(255, 255, 255, 0.8);
-    padding: 2px 6px;
-    border-radius: 10px;
-    font-size: 11px;
+    padding: 1px 4px;
+    border-radius: 8px;
+    font-size: 10px;
     font-weight: 600;
-    min-width: 18px;
+    min-width: 16px;
     text-align: center;
     flex-shrink: 0;
 }
@@ -2653,10 +2719,10 @@ body.dark-theme .clear-notes-fab {
     color: rgba(255, 255, 255, 1);
 }
 
-/* Clean Bookmarks List */
+/* Clean Bookmarks List - Compact spacing */
 .clean-bookmarks-list {
     flex: 1;
-    padding: 8px;
+    padding: 6px;
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
@@ -2679,19 +2745,19 @@ body.dark-theme .clear-notes-fab {
     background: rgba(255, 255, 255, 0.3);
 }
 
-/* Clean Bookmark Item */
+/* Clean Bookmark Item - Optimized for compact display */
 .clean-bookmark-item {
     display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 8px;
-    margin-bottom: 4px;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    margin-bottom: 2px;
     background: rgba(255, 255, 255, 0.05);
-    border-radius: 8px;
+    border-radius: 6px;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border: 1px solid transparent;
-    min-height: 36px;
+    min-height: 28px;
     user-select: none;
 }
 
@@ -2705,6 +2771,35 @@ body.dark-theme .clear-notes-fab {
     opacity: 0.7;
     transform: rotate(1deg) scale(0.95);
     z-index: 1000;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    cursor: grabbing;
+}
+
+/* Enhanced drag feedback for reordering - Optimized for compact items */
+.clean-bookmark-item.dragging::after {
+    content: '⚡ Reorder';
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(52, 152, 219, 0.9);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 9px;
+    font-weight: 600;
+    white-space: nowrap;
+    z-index: 1001;
+    pointer-events: none;
+}
+
+/* Theme-aware drag feedback */
+body.dark-theme .clean-bookmark-item.dragging::after {
+    background: rgba(93, 173, 226, 0.9);
+}
+
+body.light-theme .clean-bookmark-item.dragging::after {
+    background: rgba(52, 152, 219, 0.9);
 }
 
 .clean-bookmark-item.editing-mode {
@@ -2721,10 +2816,10 @@ body.dark-theme .clear-notes-fab {
 
 .bookmark-title-display {
     color: rgba(255, 255, 255, 0.9);
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 500;
-    line-height: 1.3;
-    margin-bottom: 2px;
+    line-height: 1.2;
+    margin-bottom: 1px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -2733,22 +2828,22 @@ body.dark-theme .clear-notes-fab {
 
 .bookmark-url-display {
     color: rgba(255, 255, 255, 0.6);
-    font-size: 11px;
-    line-height: 1.2;
+    font-size: 10px;
+    line-height: 1.1;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     cursor: pointer;
 }
 
-/* Bookmark Edit Mode (when editing) */
+/* Bookmark Edit Mode (when editing) - Compact layout */
 .bookmark-edit-mode {
     flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding: 4px 0;
+    gap: 4px;
+    padding: 2px 0;
 }
 
 .bookmark-edit-mode.hidden {
@@ -2758,15 +2853,15 @@ body.dark-theme .clear-notes-fab {
 .bookmark-input-group {
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 2px;
 }
 
 .bookmark-input-label {
     color: rgba(255, 255, 255, 0.7);
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
 }
 
 .bookmark-edit-mode .bookmark-title-input,
@@ -2775,9 +2870,9 @@ body.dark-theme .clear-notes-fab {
     border: 1px solid rgba(255, 255, 255, 0.3);
     outline: none;
     color: rgba(255, 255, 255, 0.9);
-    font-size: 12px;
-    padding: 6px 8px;
-    border-radius: 4px;
+    font-size: 11px;
+    padding: 4px 6px;
+    border-radius: 3px;
     transition: all 0.2s ease;
     font-family: inherit;
 }
@@ -2791,24 +2886,24 @@ body.dark-theme .clear-notes-fab {
 
 .bookmark-edit-actions {
     display: flex;
-    gap: 8px;
-    margin-top: 4px;
+    gap: 4px;
+    margin-top: 2px;
 }
 
 .bookmark-save-btn,
 .bookmark-cancel-btn {
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 6px 10px;
-    font-size: 11px;
+    gap: 3px;
+    padding: 4px 8px;
+    font-size: 10px;
     font-weight: 500;
     border: none;
-    border-radius: 4px;
+    border-radius: 3px;
     cursor: pointer;
     transition: all 0.2s ease;
     text-transform: uppercase;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.2px;
 }
 
 .bookmark-save-btn {
@@ -2833,14 +2928,15 @@ body.dark-theme .clear-notes-fab {
     box-shadow: 0 2px 6px rgba(231, 76, 60, 0.3);
 }
 
-/* Bookmark Inline Actions */
+/* Bookmark Inline Actions - Compact design */
 .bookmark-actions {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    flex-direction: row;
+    gap: 2px;
     opacity: 0;
     transition: all 0.2s ease;
     margin-left: 4px;
+    align-items: center;
 }
 
 .clean-bookmark-item:hover .bookmark-actions {
@@ -2852,10 +2948,10 @@ body.dark-theme .clear-notes-fab {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
+    width: 22px;
+    height: 22px;
     border: none;
-    border-radius: 4px;
+    border-radius: 3px;
     cursor: pointer;
     transition: all 0.2s ease;
     background: rgba(255, 255, 255, 0.1);
@@ -2972,13 +3068,50 @@ body.dark-theme .clear-notes-fab {
     border-radius: 8px;
 }
 
-/* Empty State */
+/* Bookmark Drop Indicator for Reordering */
+.bookmark-drop-indicator {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #3498db, transparent);
+    border-radius: 1px;
+    z-index: 1000;
+    pointer-events: none;
+    box-shadow: 0 0 4px rgba(52, 152, 219, 0.5);
+    animation: dropIndicatorPulse 1s ease-in-out infinite;
+}
+
+@keyframes dropIndicatorPulse {
+    0%, 100% {
+        opacity: 0.7;
+        transform: scaleY(1);
+    }
+    50% {
+        opacity: 1;
+        transform: scaleY(1.5);
+    }
+}
+
+/* Theme-aware drop indicator */
+body.dark-theme .bookmark-drop-indicator {
+    background: linear-gradient(90deg, transparent, var(--accent-primary), transparent);
+    box-shadow: 0 0 4px rgba(93, 173, 226, 0.5);
+}
+
+body.light-theme .bookmark-drop-indicator {
+    background: linear-gradient(90deg, transparent, var(--accent-primary), transparent);
+    box-shadow: 0 0 4px rgba(52, 152, 219, 0.5);
+}
+
+/* Empty State - Compact design */
 .group-empty-message {
     color: rgba(255, 255, 255, 0.5);
-    font-size: 13px;
+    font-size: 11px;
     text-align: center;
-    padding: 20px;
+    padding: 12px;
     font-style: italic;
+    line-height: 1.3;
 }
 
 /* Context Menus */
@@ -3123,8 +3256,8 @@ body.dark-theme .clear-notes-fab {
 }
 
 .bookmark-favicon {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
     border-radius: 2px;
     flex-shrink: 0;
 }

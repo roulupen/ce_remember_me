@@ -10,6 +10,8 @@ class Bookmarks {
         this.draggedBookmark = null;
         this.draggedGroup = null;
         this.draggedTab = null;
+        this.draggedFromGroup = null; // Track source group for reordering
+        this.dropIndicator = null; // Visual indicator for drop position
         this.isRenderingSidebar = false; // Prevent concurrent renders
         this.lastToggleTime = 0; // Prevent rapid toggle spam
         this.eventListenerSetupCount = 0; // Track setup calls
@@ -47,6 +49,39 @@ class Bookmarks {
             
             // Expose manual refresh function for testing
             window.refreshBookmarksSidebar = () => this.refreshSidebarAfterTabChange();
+            
+            // Expose reordering test function
+            window.testBookmarkReorder = (groupId) => {
+                const group = this.bookmarkGroups.find(g => g.id === groupId);
+                if (group && group.bookmarks.length >= 2) {
+                    console.log('[Bookmarks] Testing reorder - moving first bookmark to end');
+                    const [firstBookmark] = group.bookmarks.splice(0, 1);
+                    group.bookmarks.push(firstBookmark);
+                    this.saveBookmarks();
+                    this.renderMainContent();
+                    this.showTemporaryMessage('Test reorder completed', 'success');
+                } else {
+                    console.log('[Bookmarks] Need at least 2 bookmarks in group to test reorder');
+                }
+            };
+            
+            // Expose bookmark order debugging
+            window.debugBookmarkOrder = (groupId) => {
+                const group = this.bookmarkGroups.find(g => g.id === groupId || g.name === groupId);
+                if (group) {
+                    console.log(`[Bookmarks] Order in group "${group.name}":`, 
+                        group.bookmarks.map((bookmark, index) => ({
+                            position: index + 1,
+                            title: bookmark.title,
+                            id: bookmark.id
+                        }))
+                    );
+                } else {
+                    console.log('[Bookmarks] Available groups:', 
+                        this.bookmarkGroups.map(g => ({ name: g.name, id: g.id, bookmarkCount: g.bookmarks.length }))
+                    );
+                }
+            };
         } catch (error) {
             console.error('[Bookmarks] Initialization failed:', error);
             throw error;
@@ -1646,14 +1681,22 @@ class Bookmarks {
 
     // Drag and drop functionality
     handleDragStart(e) {
+        console.log('[Bookmarks] === DRAG START ===');
         const bookmarkItem = e.target.closest('.clean-bookmark-item');
         const tabItem = e.target.closest('.sidebar-tab-item');
         
         if (bookmarkItem) {
             this.draggedBookmark = bookmarkItem.dataset.bookmarkId;
             this.draggedTab = null;
+            
+            // Track source group for reordering logic
+            const sourceGroup = bookmarkItem.closest('.clean-bookmark-group');
+            this.draggedFromGroup = sourceGroup ? sourceGroup.dataset.groupId : null;
+            
             bookmarkItem.classList.add('dragging');
             e.dataTransfer.effectAllowed = 'move';
+            
+            console.log('[Bookmarks] Dragging bookmark:', this.draggedBookmark, 'from group:', this.draggedFromGroup);
         } else if (tabItem) {
             // Get current values from inputs (in case they're being edited)
             const titleInput = tabItem.querySelector('.tab-title-input');
@@ -1665,32 +1708,72 @@ class Bookmarks {
                 favicon: tabItem.dataset.favicon
             };
             this.draggedBookmark = null;
+            this.draggedFromGroup = null;
+            
             tabItem.classList.add('dragging');
             e.dataTransfer.effectAllowed = 'copy';
+            
+            console.log('[Bookmarks] Dragging tab:', this.draggedTab.title);
         }
     }
 
     handleDragOver(e) {
         e.preventDefault();
         const groupContent = e.target.closest('.clean-bookmarks-list');
+        const bookmarkItem = e.target.closest('.clean-bookmark-item');
+        
         if (groupContent && (this.draggedBookmark || this.draggedTab)) {
             e.dataTransfer.dropEffect = this.draggedBookmark ? 'move' : 'copy';
             groupContent.classList.add('drag-over');
+            
+            // Handle reordering within the same group
+            if (this.draggedBookmark && bookmarkItem) {
+                const targetGroupId = groupContent.dataset.groupId;
+                
+                // Check if we're reordering within the same group
+                if (targetGroupId === this.draggedFromGroup) {
+                    this.showDropIndicator(e, bookmarkItem, groupContent);
+                } else {
+                    this.hideDropIndicator();
+                }
+            } else {
+                this.hideDropIndicator();
+            }
+        } else {
+            this.hideDropIndicator();
         }
     }
 
     handleDrop(e) {
         e.preventDefault();
+        console.log('[Bookmarks] === DROP EVENT ===');
+        
         const groupContent = e.target.closest('.clean-bookmarks-list');
+        const bookmarkItem = e.target.closest('.clean-bookmark-item');
         
         if (groupContent) {
             const targetGroupId = groupContent.dataset.groupId;
+            console.log('[Bookmarks] Drop target group:', targetGroupId);
             
             if (this.draggedBookmark) {
-                // Moving existing bookmark
-                this.moveBookmark(this.draggedBookmark, targetGroupId);
+                // Check if we're reordering within the same group
+                if (targetGroupId === this.draggedFromGroup) {
+                    if (bookmarkItem) {
+                        console.log('[Bookmarks] Reordering within same group');
+                        this.reorderBookmark(this.draggedBookmark, bookmarkItem, groupContent, e);
+                    } else {
+                        // Dropping on empty area of same group - move to end
+                        console.log('[Bookmarks] Moving to end of same group');
+                        this.reorderBookmarkToEnd(this.draggedBookmark, targetGroupId);
+                    }
+                } else {
+                    // Moving bookmark to different group
+                    console.log('[Bookmarks] Moving bookmark to different group');
+                    this.moveBookmark(this.draggedBookmark, targetGroupId);
+                }
             } else if (this.draggedTab) {
                 // Adding tab as new bookmark
+                console.log('[Bookmarks] Adding tab as new bookmark');
                 this.addBookmark(targetGroupId, {
                     title: this.draggedTab.title,
                     url: this.draggedTab.url,
@@ -1699,6 +1782,7 @@ class Bookmarks {
             }
             
             groupContent.classList.remove('drag-over');
+            this.hideDropIndicator();
         }
     }
 
@@ -1721,6 +1805,185 @@ class Bookmarks {
         
         this.draggedBookmark = null;
         this.draggedTab = null;
+        this.draggedFromGroup = null;
+        this.hideDropIndicator();
+    }
+
+    // Visual drop indicator methods
+    showDropIndicator(e, targetBookmarkItem, groupContent) {
+        this.hideDropIndicator(); // Remove any existing indicator
+        
+        const rect = targetBookmarkItem.getBoundingClientRect();
+        const mouseY = e.clientY;
+        const itemCenterY = rect.top + rect.height / 2;
+        
+        // Determine if we should insert above or below the target item
+        const insertBefore = mouseY < itemCenterY;
+        
+        // Create drop indicator
+        this.dropIndicator = document.createElement('div');
+        this.dropIndicator.className = 'bookmark-drop-indicator';
+        this.dropIndicator.style.cssText = `
+            position: absolute;
+            left: 8px;
+            right: 8px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #3498db, transparent);
+            border-radius: 1px;
+            z-index: 1000;
+            pointer-events: none;
+            box-shadow: 0 0 4px rgba(52, 152, 219, 0.5);
+        `;
+        
+        // Position the indicator
+        if (insertBefore) {
+            this.dropIndicator.style.top = (rect.top - groupContent.getBoundingClientRect().top - 1) + 'px';
+        } else {
+            this.dropIndicator.style.top = (rect.bottom - groupContent.getBoundingClientRect().top + 3) + 'px';
+        }
+        
+        groupContent.style.position = 'relative';
+        groupContent.appendChild(this.dropIndicator);
+    }
+    
+    hideDropIndicator() {
+        if (this.dropIndicator && this.dropIndicator.parentNode) {
+            this.dropIndicator.parentNode.removeChild(this.dropIndicator);
+            this.dropIndicator = null;
+        }
+    }
+    
+    // Bookmark reordering within the same group
+    reorderBookmark(draggedBookmarkId, targetBookmarkItem, groupContent, e) {
+        console.log('[Bookmarks] === REORDER BOOKMARK ===');
+        
+        const targetGroupId = groupContent.dataset.groupId;
+        const targetBookmarkId = targetBookmarkItem.dataset.bookmarkId;
+        
+        console.log('[Bookmarks] Reordering:', {
+            draggedBookmark: draggedBookmarkId,
+            targetBookmark: targetBookmarkId,
+            groupId: targetGroupId
+        });
+        
+        // Don't reorder if dropping on itself
+        if (draggedBookmarkId === targetBookmarkId) {
+            console.log('[Bookmarks] Dropping on self, no reorder needed');
+            return;
+        }
+        
+        const group = this.bookmarkGroups.find(g => g.id === targetGroupId);
+        if (!group) {
+            console.error('[Bookmarks] Target group not found:', targetGroupId);
+            return;
+        }
+        
+        // Find the dragged bookmark and target bookmark indices
+        const draggedIndex = group.bookmarks.findIndex(b => b.id === draggedBookmarkId);
+        const targetIndex = group.bookmarks.findIndex(b => b.id === targetBookmarkId);
+        
+        if (draggedIndex === -1 || targetIndex === -1) {
+            console.error('[Bookmarks] Bookmark not found in group for reordering');
+            return;
+        }
+        
+        // Determine insertion position based on mouse position
+        const rect = targetBookmarkItem.getBoundingClientRect();
+        const mouseY = e.clientY;
+        const itemCenterY = rect.top + rect.height / 2;
+        const insertBefore = mouseY < itemCenterY;
+        
+        // Calculate new index
+        let newIndex = insertBefore ? targetIndex : targetIndex + 1;
+        
+        // Adjust index if dragged item is before the target (removing it shifts indices)
+        if (draggedIndex < targetIndex && !insertBefore) {
+            newIndex = targetIndex; // No adjustment needed
+        } else if (draggedIndex < targetIndex && insertBefore) {
+            newIndex = targetIndex - 1;
+        } else if (draggedIndex > targetIndex && insertBefore) {
+            newIndex = targetIndex;
+        } else if (draggedIndex > targetIndex && !insertBefore) {
+            newIndex = targetIndex + 1;
+        }
+        
+        // Don't reorder if the position won't actually change
+        if (newIndex === draggedIndex || (newIndex === draggedIndex + 1)) {
+            console.log('[Bookmarks] No effective position change, skipping reorder');
+            return;
+        }
+        
+        console.log('[Bookmarks] Reorder details:', {
+            draggedIndex,
+            targetIndex,
+            newIndex,
+            insertBefore,
+            mouseY,
+            itemCenterY
+        });
+        
+        // Perform the reordering
+        const [draggedBookmark] = group.bookmarks.splice(draggedIndex, 1);
+        
+        // Adjust newIndex if it's after the removed item
+        if (newIndex > draggedIndex) {
+            newIndex--;
+        }
+        
+        group.bookmarks.splice(newIndex, 0, draggedBookmark);
+        
+        console.log('[Bookmarks] Bookmark reordered successfully:', {
+            bookmarkTitle: draggedBookmark.title,
+            oldPosition: draggedIndex,
+            newPosition: newIndex
+        });
+        
+        // Save and re-render
+        this.saveBookmarks();
+        this.renderMainContent();
+        
+        // Show success feedback
+        this.showTemporaryMessage(`Bookmark "${draggedBookmark.title}" reordered`, 'success');
+    }
+    
+    // Reorder bookmark to end of group (when dropping on empty area)
+    reorderBookmarkToEnd(draggedBookmarkId, targetGroupId) {
+        console.log('[Bookmarks] === REORDER TO END ===');
+        
+        const group = this.bookmarkGroups.find(g => g.id === targetGroupId);
+        if (!group) {
+            console.error('[Bookmarks] Target group not found:', targetGroupId);
+            return;
+        }
+        
+        const draggedIndex = group.bookmarks.findIndex(b => b.id === draggedBookmarkId);
+        if (draggedIndex === -1) {
+            console.error('[Bookmarks] Dragged bookmark not found in group');
+            return;
+        }
+        
+        // Don't move if already at the end
+        if (draggedIndex === group.bookmarks.length - 1) {
+            console.log('[Bookmarks] Bookmark already at end, no reorder needed');
+            return;
+        }
+        
+        // Move bookmark to end
+        const [draggedBookmark] = group.bookmarks.splice(draggedIndex, 1);
+        group.bookmarks.push(draggedBookmark);
+        
+        console.log('[Bookmarks] Bookmark moved to end:', {
+            bookmarkTitle: draggedBookmark.title,
+            oldPosition: draggedIndex,
+            newPosition: group.bookmarks.length - 1
+        });
+        
+        // Save and re-render
+        this.saveBookmarks();
+        this.renderMainContent();
+        
+        // Show success feedback
+        this.showTemporaryMessage(`Bookmark "${draggedBookmark.title}" moved to end`, 'success');
     }
 
     moveBookmark(bookmarkId, targetGroupId) {
