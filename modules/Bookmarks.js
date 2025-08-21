@@ -13,6 +13,8 @@ class Bookmarks {
         this.isRenderingSidebar = false; // Prevent concurrent renders
         this.lastToggleTime = 0; // Prevent rapid toggle spam
         this.eventListenerSetupCount = 0; // Track setup calls
+        this.tabEventListenersSetup = false; // Track Chrome tab listeners
+        this.lastTabUpdateTime = 0; // Throttle tab updates
         
         // Module initialized
     }
@@ -33,12 +35,18 @@ class Bookmarks {
             // Setup group title editing
             this.setupGroupTitleEditing();
             
+            // Setup Chrome tab event listeners for real-time sidebar updates
+            this.setupTabEventListeners();
+            
             console.log('[Bookmarks] === BOOKMARKS MODULE INIT COMPLETE ===');
             console.log('[Bookmarks] Initial sidebar state:', this.sidebarState);
             console.log('[Bookmarks] Event listeners attached:', Date.now());
             
             // Attach debug function to window for manual debugging
             window.debugBookmarksState = () => this.logCurrentState();
+            
+            // Expose manual refresh function for testing
+            window.refreshBookmarksSidebar = () => this.refreshSidebarAfterTabChange();
         } catch (error) {
             console.error('[Bookmarks] Initialization failed:', error);
             throw error;
@@ -312,6 +320,99 @@ class Bookmarks {
         document.addEventListener('dragover', (e) => this.handleDragOver(e));
         document.addEventListener('drop', (e) => this.handleDrop(e));
         document.addEventListener('dragend', (e) => this.handleDragEnd(e));
+    }
+
+    setupTabEventListeners() {
+        console.log('[Bookmarks] Setting up Chrome tab event listeners...');
+        
+        // Prevent duplicate listener setup
+        if (this.tabEventListenersSetup) {
+            console.log('[Bookmarks] Tab event listeners already set up, skipping...');
+            return;
+        }
+        
+        try {
+            if (chrome && chrome.tabs) {
+                // Listen for new tabs being created
+                chrome.tabs.onCreated.addListener((tab) => {
+                    console.log('[Bookmarks] Tab created:', tab.id, tab.url);
+                    this.handleTabChange('created', tab);
+                });
+                
+                // Listen for tabs being closed
+                chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
+                    console.log('[Bookmarks] Tab removed:', tabId);
+                    this.handleTabChange('removed', { id: tabId });
+                });
+                
+                // Listen for tab updates (URL, title, favicon changes)
+                chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+                    // Only process completed updates to avoid excessive refreshes
+                    if (changeInfo.status === 'complete' || changeInfo.title || changeInfo.favIconUrl) {
+                        console.log('[Bookmarks] Tab updated:', tabId, changeInfo);
+                        this.handleTabChange('updated', tab);
+                    }
+                });
+                
+                // Listen for tab activation (switching between tabs)
+                chrome.tabs.onActivated.addListener((activeInfo) => {
+                    console.log('[Bookmarks] Tab activated:', activeInfo.tabId);
+                    this.handleTabChange('activated', { id: activeInfo.tabId });
+                });
+                
+                this.tabEventListenersSetup = true;
+                console.log('[Bookmarks] Chrome tab event listeners set up successfully');
+            } else {
+                console.warn('[Bookmarks] Chrome tabs API not available for event listeners');
+            }
+        } catch (error) {
+            console.error('[Bookmarks] Error setting up tab event listeners:', error);
+        }
+    }
+
+    handleTabChange(eventType, tab) {
+        const now = Date.now();
+        
+        // Throttle updates to prevent excessive refreshes (minimum 500ms between updates)
+        if (now - this.lastTabUpdateTime < 500) {
+            console.log('[Bookmarks] Tab update throttled - too frequent');
+            return;
+        }
+        
+        // Only update if bookmarks tab is currently active (performance optimization)
+        const bookmarksTabContent = document.getElementById('bookmarks-tab');
+        if (!bookmarksTabContent || !bookmarksTabContent.classList.contains('active')) {
+            console.log('[Bookmarks] Bookmarks tab not active, skipping sidebar update for:', eventType);
+            return;
+        }
+        
+        console.log('[Bookmarks] === TAB CHANGE DETECTED ===');
+        console.log('[Bookmarks] Event type:', eventType);
+        console.log('[Bookmarks] Tab info:', { id: tab.id, url: tab.url, title: tab.title });
+        
+        this.lastTabUpdateTime = now;
+        
+        // Refresh the sidebar with current tabs
+        this.refreshSidebarAfterTabChange();
+    }
+
+    async refreshSidebarAfterTabChange() {
+        try {
+            console.log('[Bookmarks] Refreshing sidebar after tab change...');
+            
+            // Don't refresh if already rendering to prevent conflicts
+            if (this.isRenderingSidebar) {
+                console.log('[Bookmarks] Sidebar already rendering, skipping refresh...');
+                return;
+            }
+            
+            // Reload current tabs and re-render sidebar
+            await this.renderSidebar();
+            
+            console.log('[Bookmarks] Sidebar refreshed successfully after tab change');
+        } catch (error) {
+            console.error('[Bookmarks] Error refreshing sidebar after tab change:', error);
+        }
     }
 
     toggleSidebar() {
@@ -1925,6 +2026,8 @@ class Bookmarks {
         console.log('[Bookmarks] Is rendering sidebar:', this.isRenderingSidebar);
         console.log('[Bookmarks] Last toggle time:', this.lastToggleTime);
         console.log('[Bookmarks] Event listener setup count:', this.eventListenerSetupCount);
+        console.log('[Bookmarks] Tab event listeners setup:', this.tabEventListenersSetup);
+        console.log('[Bookmarks] Last tab update time:', this.lastTabUpdateTime);
         console.log('[Bookmarks] Current tabs count:', this.currentTabs.length);
         console.log('[Bookmarks] Bookmark groups count:', this.bookmarkGroups.length);
         

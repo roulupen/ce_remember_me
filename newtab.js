@@ -301,7 +301,15 @@ class ProductivityApp {
                 case 'bookmarks-tab':
                     console.log('[ProductivityApp] Rendering Bookmarks tab');
                     await this.bookmarks.renderBookmarks();
-                    // Note: renderBookmarks already calls renderSidebar, so no need to call refreshSidebar
+                    // Additional refresh to catch any tab changes that happened while on other tabs
+                    setTimeout(async () => {
+                        try {
+                            console.log('[ProductivityApp] Refreshing sidebar with latest tab data...');
+                            await this.bookmarks.refreshSidebarAfterTabChange();
+                        } catch (error) {
+                            console.error('[ProductivityApp] Error refreshing sidebar on tab switch:', error);
+                        }
+                    }, 200); // Small delay to ensure renderBookmarks completes first
                     break;
             }
             
@@ -563,6 +571,8 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('[Tab Debug] Active tab button:', document.querySelector('.tab-btn.active')?.dataset.tab);
         console.log('[Tab Debug] Active tab content:', document.querySelector('.tab-content.active')?.id);
         console.log('[Tab Debug] Available tabs:', Array.from(document.querySelectorAll('.tab-btn')).map(btn => btn.dataset.tab));
+        console.log('[Tab Debug] Tab event listeners setup:', window.bookmarks?.tabEventListenersSetup);
+        console.log('[Tab Debug] Last tab update time:', window.bookmarks?.lastTabUpdateTime);
     };
     
     window.debugApp = () => {
@@ -578,6 +588,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Expose toggle functions globally for testing
     window.toggleTheme = () => window.productivityApp.toggleTheme();
     window.switchToTab = (tabId) => window.productivityApp.switchTab(tabId);
+    
+    // Expose bookmark functions for testing
+    window.refreshSidebar = () => {
+        if (window.bookmarks) {
+            window.bookmarks.refreshSidebarAfterTabChange();
+        }
+    };
     
     console.log('Productivity Hub initialized with theme system and tab persistence');
 });
