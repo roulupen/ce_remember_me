@@ -24,12 +24,19 @@ body {
 /* Tab Navigation */
 .tab-navigation {
     display: flex;
+    justify-content: space-between;
+    align-items: center;
     background: linear-gradient(135deg, #2c3e50, #34495e);
     padding: 8px 16px;
-    gap: 4px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     z-index: 100;
     position: relative;
+}
+
+.tab-buttons {
+    display: flex;
+    gap: 4px;
+    align-items: center;
 }
 
 .tab-btn {
@@ -97,6 +104,748 @@ body {
     transform: scale(1.05);
 }
 
+/* Theme Toggle Button */
+.theme-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.theme-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 1);
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.theme-toggle-btn:active {
+    transform: scale(0.95);
+}
+
+.theme-icon {
+    position: absolute;
+    transition: all 0.3s ease;
+}
+
+.theme-icon.hidden {
+    opacity: 0;
+    transform: rotate(180deg) scale(0.5);
+}
+
+/* ===== THEME SYSTEM ===== */
+
+/* Light Theme (Default) */
+:root {
+    --bg-primary: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    --bg-secondary: rgba(255, 255, 255, 0.9);
+    --bg-tertiary: rgba(255, 255, 255, 0.7);
+    --text-primary: #2c3e50;
+    --text-secondary: #5a6c7d;
+    --text-muted: #7f8c8d;
+    --border-primary: rgba(0, 0, 0, 0.1);
+    --border-secondary: rgba(0, 0, 0, 0.05);
+    --shadow-primary: rgba(0, 0, 0, 0.1);
+    --shadow-secondary: rgba(0, 0, 0, 0.05);
+    --accent-primary: #3498db;
+    --accent-secondary: #2980b9;
+    --success: #27ae60;
+    --warning: #f39c12;
+    --danger: #e74c3c;
+}
+
+/* Dark Theme */
+body.dark-theme {
+    --bg-primary: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    --bg-secondary: rgba(30, 32, 60, 0.9);
+    --bg-tertiary: rgba(40, 44, 80, 0.7);
+    --text-primary: #ecf0f1;
+    --text-secondary: #bdc3c7;
+    --text-muted: #95a5a6;
+    --border-primary: rgba(255, 255, 255, 0.1);
+    --border-secondary: rgba(255, 255, 255, 0.05);
+    --shadow-primary: rgba(0, 0, 0, 0.3);
+    --shadow-secondary: rgba(0, 0, 0, 0.2);
+    --accent-primary: #5dade2;
+    --accent-secondary: #3498db;
+    --success: #58d68d;
+    --warning: #f7dc6f;
+    --danger: #ec7063;
+}
+
+/* Apply theme to main containers */
+body.light-theme .notes-main-container,
+body.light-theme .tasks-main-container,
+body.light-theme .bookmarks-container {
+    background: var(--bg-primary);
+}
+
+body.dark-theme .notes-main-container,
+body.dark-theme .tasks-main-container,
+body.dark-theme .bookmarks-container {
+    background: var(--bg-primary);
+}
+
+/* Theme-aware tab navigation */
+body.dark-theme .tab-navigation {
+    background: linear-gradient(135deg, #0f1419, #1e2328);
+    border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Theme-aware tab buttons */
+body.dark-theme .tab-btn {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-secondary);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+body.dark-theme .tab-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+body.dark-theme .tab-btn.active {
+    background: linear-gradient(135deg, #5dade2, #3498db);
+    color: white;
+}
+
+/* Theme-aware text colors */
+body.dark-theme .tasks-title,
+body.dark-theme .column-title,
+body.dark-theme .group-title-display,
+body.dark-theme .bookmark-title-display,
+body.dark-theme .sidebar-title {
+    color: var(--text-primary);
+}
+
+body.dark-theme .bookmark-url-display,
+body.dark-theme .group-stats {
+    color: var(--text-muted);
+}
+
+/* Theme-aware card backgrounds */
+body.dark-theme .task-item,
+body.dark-theme .clean-bookmark-item,
+body.dark-theme .sidebar-tab-item {
+    background: var(--bg-secondary);
+    border-color: var(--border-primary);
+    color: var(--text-primary);
+}
+
+body.dark-theme .task-item:hover,
+body.dark-theme .clean-bookmark-item:hover,
+body.dark-theme .sidebar-tab-item:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--border-secondary);
+}
+
+/* Theme-aware group headers */
+body.dark-theme .clean-group-header {
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-primary);
+}
+
+/* Theme-aware sidebar */
+body.dark-theme .bookmarks-sidebar {
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-primary);
+}
+
+/* Theme-aware inputs */
+body.dark-theme .bookmark-title-input,
+body.dark-theme .bookmark-url-input,
+body.dark-theme .group-title-input,
+body.dark-theme .tab-title-input,
+body.dark-theme .tab-url-input {
+    background: rgba(0, 0, 0, 0.2);
+    border-color: var(--border-primary);
+    color: var(--text-primary);
+}
+
+body.dark-theme .bookmark-title-input:focus,
+body.dark-theme .bookmark-url-input:focus,
+body.dark-theme .group-title-input:focus,
+body.dark-theme .tab-title-input:focus,
+body.dark-theme .tab-url-input:focus {
+    border-color: var(--accent-primary);
+    background: rgba(93, 173, 226, 0.1);
+}
+
+/* Theme indicator on toggle button */
+body.dark-theme .theme-toggle-btn {
+    background: rgba(93, 173, 226, 0.2);
+    color: var(--accent-primary);
+    border-color: var(--accent-primary);
+}
+
+body.light-theme .theme-toggle-btn {
+    background: rgba(255, 255, 255, 0.8) !important;
+    color: var(--accent-primary) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+body.light-theme .theme-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.95) !important;
+    color: var(--accent-secondary) !important;
+    border-color: var(--accent-primary) !important;
+}
+
+body.dark-theme .light-icon {
+    opacity: 0;
+    transform: rotate(180deg) scale(0.5);
+}
+
+body.dark-theme .dark-icon {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+}
+
+body.light-theme .light-icon {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+}
+
+body.light-theme .dark-icon {
+    opacity: 0;
+    transform: rotate(180deg) scale(0.5);
+}
+
+/* ===== LIGHT THEME OVERRIDES ===== */
+
+/* Bookmark Light Theme - Override white text for visibility */
+body.light-theme .group-title-display,
+body.light-theme .bookmark-title-display {
+    color: var(--text-primary) !important;
+}
+
+body.light-theme .bookmark-url-display,
+body.light-theme .group-stats {
+    color: var(--text-secondary) !important;
+}
+
+body.light-theme .clean-bookmark-item {
+    background: rgba(255, 255, 255, 0.8) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    color: var(--text-primary) !important;
+}
+
+body.light-theme .clean-bookmark-item:hover {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-color: var(--accent-primary) !important;
+}
+
+body.light-theme .clean-group-header {
+    background: rgba(255, 255, 255, 0.6) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+body.light-theme .bookmarks-sidebar {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-right: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+body.light-theme .sidebar-tab-item {
+    background: rgba(255, 255, 255, 0.8) !important;
+    color: var(--text-primary) !important;
+}
+
+body.light-theme .sidebar-title {
+    color: var(--text-primary) !important;
+}
+
+body.light-theme .tab-title-input,
+body.light-theme .tab-url-input {
+    color: var(--text-primary) !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+    border: 1px solid rgba(0, 0, 0, 0.2) !important;
+}
+
+body.light-theme .bookmark-title-input,
+body.light-theme .bookmark-url-input,
+body.light-theme .group-title-input {
+    color: var(--text-primary) !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+    border: 1px solid rgba(0, 0, 0, 0.2) !important;
+}
+
+body.light-theme .floating-actions .groups-counter {
+    background: rgba(255, 255, 255, 0.9) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+body.light-theme .floating-add-group {
+    background: var(--accent-primary) !important;
+    color: white !important;
+}
+
+body.light-theme .sidebar-count {
+    background: var(--accent-primary) !important;
+    color: white !important;
+}
+
+/* Additional light theme fixes for bookmark visibility */
+body.light-theme .clean-bookmark-group {
+    background: rgba(255, 255, 255, 0.9) !important;
+    border-right: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+
+body.light-theme .clean-bookmark-group:hover {
+    background: rgba(255, 255, 255, 0.95) !important;
+}
+
+body.light-theme .clean-bookmarks-list {
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent !important;
+}
+
+body.light-theme .clean-bookmarks-list::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2) !important;
+}
+
+body.light-theme .clean-bookmarks-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3) !important;
+}
+
+body.light-theme .groups-counter {
+    background: rgba(255, 255, 255, 0.9) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+body.light-theme .clean-groups-container {
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent !important;
+}
+
+body.light-theme .clean-groups-container::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2) !important;
+}
+
+body.light-theme .clean-groups-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3) !important;
+}
+
+body.light-theme .group-empty-message {
+    color: var(--text-muted) !important;
+}
+
+body.light-theme .sidebar-loading,
+body.light-theme .sidebar-empty {
+    color: var(--text-secondary) !important;
+}
+
+/* Light theme action buttons */
+body.light-theme .bookmark-actions button,
+body.light-theme .group-actions button {
+    background: rgba(255, 255, 255, 0.8) !important;
+    color: var(--text-secondary) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+body.light-theme .bookmark-actions button:hover,
+body.light-theme .group-actions button:hover {
+    background: rgba(255, 255, 255, 0.95) !important;
+    transform: translateY(-1px) scale(1.05) !important;
+}
+
+/* Light theme edit mode elements */
+body.light-theme .bookmark-input-label,
+body.light-theme .group-input-label {
+    color: var(--text-secondary) !important;
+}
+
+body.light-theme .bookmark-edit-mode,
+body.light-theme .group-edit-mode {
+    background: rgba(255, 255, 255, 0.95) !important;
+    padding: 8px !important;
+    border-radius: 6px !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Light theme tooltip fix */
+body.light-theme .sidebar-tab-item .tab-tooltip {
+    background: rgba(0, 0, 0, 0.9) !important;
+    color: white !important;
+}
+
+/* Fix sidebar tab item text visibility in light theme */
+body.light-theme .tab-title-input {
+    color: var(--text-primary) !important;
+}
+
+body.light-theme .tab-url-section {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+body.light-theme .url-label {
+    color: var(--text-secondary) !important;
+}
+
+/* Fix bookmark and group display colors that were invisible */
+body.light-theme .bookmark-title-display,
+body.light-theme .group-title-display {
+    color: var(--text-primary) !important;
+    font-weight: 600 !important;
+}
+
+body.light-theme .bookmark-url-display {
+    color: var(--text-secondary) !important;
+}
+
+body.light-theme .group-stats {
+    background: rgba(255, 255, 255, 0.9) !important;
+    color: var(--text-secondary) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Fix any remaining white text elements */
+body.light-theme .sidebar-header h3,
+body.light-theme .sidebar-title {
+    color: var(--text-primary) !important;
+}
+
+body.light-theme .tabs-count,
+body.light-theme .sidebar-count {
+    background: var(--accent-primary) !important;
+    color: white !important;
+}
+
+/* Override hardcoded white colors in bookmark edit inputs */
+body.light-theme .bookmark-edit-mode .bookmark-title-input,
+body.light-theme .bookmark-edit-mode .bookmark-url-input {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: 1px solid rgba(0, 0, 0, 0.2) !important;
+    color: var(--text-primary) !important;
+}
+
+body.light-theme .group-edit-mode .group-title-input {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: 1px solid rgba(0, 0, 0, 0.2) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Fix sidebar toggle button visibility in light theme */
+body.light-theme .sidebar-toggle-btn {
+    background: rgba(255, 255, 255, 0.95) !important;
+    color: var(--accent-primary) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+body.light-theme .bookmarks-sidebar.collapsed .sidebar-toggle-btn {
+    background: var(--accent-primary) !important;
+    color: white !important;
+    border-color: var(--accent-primary) !important;
+}
+
+body.light-theme .bookmarks-sidebar.visible .sidebar-toggle-btn {
+    background: rgba(255, 255, 255, 0.95) !important;
+    color: var(--accent-primary) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Fix dragging indicators in light theme */
+body.light-theme .clean-bookmark-item.dragging {
+    background: rgba(255, 255, 255, 0.9) !important;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2) !important;
+}
+
+body.light-theme .sidebar-tab-item.dragging {
+    background: rgba(255, 255, 255, 0.9) !important;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Fix drag over effects in light theme */
+body.light-theme .clean-bookmarks-list.drag-over {
+    background: rgba(52, 152, 219, 0.1) !important;
+    border: 2px dashed var(--accent-primary) !important;
+}
+
+/* Light theme fixes for Tasks module */
+body.light-theme .tasks-title,
+body.light-theme .column-title {
+    color: var(--text-primary) !important;
+}
+
+body.light-theme .task-item {
+    background: rgba(255, 255, 255, 0.9) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+
+body.light-theme .task-item:hover {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-color: var(--accent-primary) !important;
+}
+
+body.light-theme .task-column {
+    background: rgba(255, 255, 255, 0.8) !important;
+    border: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+
+body.light-theme .column-header {
+    background: rgba(255, 255, 255, 0.6) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+body.light-theme .task-count {
+    background: rgba(255, 255, 255, 0.9) !important;
+    color: var(--text-secondary) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+body.light-theme .today-column .task-count {
+    background: var(--accent-primary) !important;
+    color: white !important;
+}
+
+/* Light theme fixes for Notes module */
+body.light-theme .notes-floating-container::before {
+    color: var(--text-secondary) !important;
+}
+
+body.light-theme .sticky-note {
+    background: rgba(255, 255, 255, 0.95) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+body.light-theme .sticky-note-header {
+    background: rgba(255, 255, 255, 0.8) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+body.light-theme .sticky-note-title {
+    color: var(--text-primary) !important;
+}
+
+body.light-theme .sticky-note-content {
+    color: var(--text-primary) !important;
+}
+
+/* Light theme modal fixes */
+body.light-theme .modal-content {
+    background: rgba(255, 255, 255, 0.95) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+body.light-theme .modal-header {
+    background: rgba(255, 255, 255, 0.8) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+    color: var(--text-primary) !important;
+}
+
+body.light-theme .form-group label {
+    color: var(--text-secondary) !important;
+}
+
+body.light-theme .form-group input,
+body.light-theme .form-group select,
+body.light-theme .form-group textarea {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: 1px solid rgba(0, 0, 0, 0.2) !important;
+    color: var(--text-primary) !important;
+}
+
+body.light-theme .form-group input:focus,
+body.light-theme .form-group select:focus,
+body.light-theme .form-group textarea:focus {
+    border-color: var(--accent-primary) !important;
+    background: rgba(255, 255, 255, 1) !important;
+}
+
+/* Light theme button fixes */
+body.light-theme .btn-secondary {
+    background: rgba(255, 255, 255, 0.9) !important;
+    color: var(--text-secondary) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+body.light-theme .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.95) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Light theme context menu fixes */
+body.light-theme .bookmark-context-menu,
+body.light-theme .group-context-menu {
+    background: rgba(255, 255, 255, 0.98) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
+}
+
+body.light-theme .context-menu-item {
+    color: var(--text-primary) !important;
+}
+
+body.light-theme .context-menu-item:hover {
+    background: rgba(52, 152, 219, 0.1) !important;
+    color: var(--accent-primary) !important;
+}
+
+body.light-theme .context-menu-item.danger {
+    color: var(--danger) !important;
+}
+
+body.light-theme .context-menu-item.danger:hover {
+    background: rgba(231, 76, 60, 0.1) !important;
+    color: var(--danger) !important;
+}
+
+body.light-theme .context-menu-divider {
+    background: rgba(0, 0, 0, 0.1) !important;
+}
+
+/* ===== COMPREHENSIVE DARK THEME COVERAGE ===== */
+
+/* Task Tracker Dark Theme */
+body.dark-theme .task-column {
+    background: var(--bg-secondary);
+    border-color: var(--border-primary);
+}
+
+body.dark-theme .task-column.today-column {
+    background: rgba(93, 173, 226, 0.1);
+    border-color: var(--accent-primary);
+}
+
+body.dark-theme .column-header {
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-primary);
+}
+
+body.dark-theme .task-count {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+}
+
+body.dark-theme .today-column .task-count {
+    background: var(--accent-primary);
+    color: white;
+}
+
+body.dark-theme .add-task-btn {
+    background: linear-gradient(135deg, var(--success), #239b56);
+    color: white;
+}
+
+/* Sticky Notes Dark Theme */
+body.dark-theme .sticky-note {
+    background: var(--bg-secondary);
+    border-color: var(--border-primary);
+    color: var(--text-primary);
+    box-shadow: 0 4px 12px var(--shadow-primary);
+}
+
+body.dark-theme .sticky-note-header {
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-primary);
+}
+
+body.dark-theme .sticky-note-content {
+    background: transparent;
+    color: var(--text-primary);
+}
+
+body.dark-theme .notes-floating-container::before {
+    color: var(--text-muted);
+}
+
+/* Bookmark Specific Dark Theme */
+body.dark-theme .bookmark-actions button,
+body.dark-theme .group-actions button {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-muted);
+}
+
+body.dark-theme .bookmark-edit-btn:hover,
+body.dark-theme .group-edit-btn:hover {
+    background: var(--accent-primary);
+    color: white;
+}
+
+body.dark-theme .bookmark-delete-btn:hover,
+body.dark-theme .group-delete-btn:hover {
+    background: var(--danger);
+    color: white;
+}
+
+/* Modal Dark Theme */
+body.dark-theme .modal-content {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    color: var(--text-primary);
+}
+
+body.dark-theme .modal-header {
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-primary);
+    color: var(--text-primary);
+}
+
+body.dark-theme .form-group label {
+    color: var(--text-secondary);
+}
+
+body.dark-theme .form-group input,
+body.dark-theme .form-group select,
+body.dark-theme .form-group textarea {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-primary);
+    color: var(--text-primary);
+}
+
+body.dark-theme .form-group input:focus,
+body.dark-theme .form-group select:focus,
+body.dark-theme .form-group textarea:focus {
+    border-color: var(--accent-primary);
+    background: rgba(93, 173, 226, 0.1);
+}
+
+/* Button Dark Theme */
+body.dark-theme .btn-primary {
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+}
+
+body.dark-theme .btn-secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-primary);
+}
+
+/* Tooltip Dark Theme */
+body.dark-theme .sidebar-tab-item .tab-tooltip {
+    background: rgba(0, 0, 0, 0.95);
+    color: var(--text-primary);
+}
+
+/* Floating Actions Dark Theme */
+body.dark-theme .floating-action-btn {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-primary);
+}
+
+body.dark-theme .add-note-fab {
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+}
+
+body.dark-theme .clear-notes-fab {
+    background: linear-gradient(135deg, var(--danger), #c0392b);
+}
+
 /* Tab Content */
 .tab-content {
     flex: 1;
@@ -116,6 +865,7 @@ body {
     overflow: hidden; /* Prevent scrolling */
     width: 100%;
     position: relative;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
 }
 
 /* Full-screen Notes Floating Container */
@@ -1192,4 +1942,1499 @@ body {
         grid-template-columns: 1fr;
         gap: 8px;
     }
+}
+
+/* Bookmarks Module Styles */
+.bookmarks-container {
+    height: 100%;
+    position: relative;
+    display: flex;
+    overflow: hidden;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+/* Sidebar Toggle Button */
+.sidebar-toggle-btn {
+    position: absolute;
+    top: 50%;
+    right: -12px;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 48px;
+    border-radius: 0 12px 12px 0;
+    border: none;
+    background: rgba(255, 255, 255, 0.9);
+    color: #667eea;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    border-left: none;
+}
+
+.sidebar-toggle-btn:hover {
+    background: rgba(255, 255, 255, 1);
+    color: #5a67d8;
+    transform: translateY(-50%) translateX(2px);
+    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar-toggle-btn:active {
+    transform: translateY(-50%) translateX(1px);
+}
+
+/* Toggle button positioning for collapsed state */
+.bookmarks-sidebar.collapsed .sidebar-toggle-btn {
+    right: -12px;
+    background: rgba(102, 126, 234, 0.9);
+    color: white;
+    z-index: 1001; /* Ensure button stays on top */
+}
+
+/* Toggle button positioning for visible state */
+.bookmarks-sidebar.visible .sidebar-toggle-btn {
+    right: -12px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #667eea;
+}
+
+/* Sidebar Styles */
+.bookmarks-sidebar {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(255, 255, 255, 0.2);
+    overflow: visible; /* Show toggle button */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 10;
+    box-shadow: 2px 0 20px rgba(0, 0, 0, 0.1);
+    box-sizing: border-box;
+    position: relative; /* For toggle button positioning */
+    /* Default to collapsed state */
+    width: 60px;
+    padding: 16px 8px;
+}
+
+/* Collapsed sidebar - shows only favicons (default state) */
+.bookmarks-sidebar.collapsed {
+    width: 60px;
+    padding: 16px 8px;
+    box-sizing: border-box;
+}
+
+/* Expanded sidebar - shows full content */
+.bookmarks-sidebar.visible {
+    width: 280px;
+    padding: 16px;
+    box-sizing: border-box;
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding: 0 10px;
+    border-bottom: 2px solid rgba(102, 126, 234, 0.2);
+    padding-bottom: 12px;
+}
+
+.sidebar-title {
+    color: #2c3e50;
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0;
+}
+
+.sidebar-count {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.sidebar-content {
+    max-height: calc(100vh - 140px);
+    overflow-y: auto;
+    padding-right: 8px;
+}
+
+.sidebar-empty {
+    text-align: center;
+    color: #95a5a6;
+    font-style: italic;
+    padding: 20px;
+    line-height: 1.5;
+}
+
+.sidebar-empty small {
+    display: block;
+    margin-top: 8px;
+    font-size: 11px;
+    opacity: 0.8;
+}
+
+.sidebar-loading {
+    text-align: center;
+    color: #667eea;
+    font-style: italic;
+    padding: 20px;
+    animation: pulse 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes pulse {
+    from {
+        opacity: 0.6;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Sidebar Tab Item */
+.sidebar-tab-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 2px solid transparent;
+    position: relative;
+    overflow: hidden;
+    user-select: none;
+    min-height: 36px; /* Ensure consistent height */
+}
+
+.sidebar-tab-item.dragging {
+    opacity: 0.7;
+    transform: rotate(2deg) scale(0.95);
+    z-index: 1000;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.sidebar-tab-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.1), transparent);
+    transition: left 0.5s ease;
+}
+
+.sidebar-tab-item:hover::before {
+    left: 100%;
+}
+
+.sidebar-tab-item:hover {
+    background: rgba(255, 255, 255, 1);
+    border-color: #667eea;
+    transform: translateX(4px);
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
+}
+
+.tab-favicon {
+    width: 16px;
+    height: 16px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.tab-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.tab-title-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #2c3e50;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 2px;
+    width: 100%;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    cursor: text;
+    line-height: 1.2;
+    position: relative;
+}
+
+.tab-title-input:hover {
+    background: rgba(52, 152, 219, 0.05);
+    border: 1px solid rgba(52, 152, 219, 0.2);
+    padding: 1px 3px; /* Adjust for border */
+}
+
+.tab-title-input:focus {
+    background: rgba(52, 152, 219, 0.1);
+    border: 1px solid rgba(52, 152, 219, 0.4);
+    padding: 1px 3px; /* Adjust for border */
+    user-select: text;
+}
+
+/* URL Section - Hidden by default */
+.tab-url-section {
+    margin-top: 4px;
+    opacity: 1;
+    max-height: 50px;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tab-url-section.hidden {
+    opacity: 0;
+    max-height: 0;
+    margin-top: 0;
+    pointer-events: none;
+}
+
+.url-label {
+    color: #7f8c8d;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+    display: block;
+}
+
+.tab-url-input {
+    background: transparent;
+    border: 1px solid rgba(127, 140, 141, 0.3);
+    outline: none;
+    color: #7f8c8d;
+    font-size: 11px;
+    width: 100%;
+    padding: 3px 6px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.tab-url-input:hover,
+.tab-url-input:focus {
+    border-color: rgba(52, 152, 219, 0.5);
+    background: rgba(52, 152, 219, 0.05);
+    color: #2c3e50;
+}
+
+/* Enhanced editing mode styles */
+.sidebar-tab-item.editing-mode {
+    background: rgba(52, 152, 219, 0.1);
+    border-color: #3498db;
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.2);
+    transform: translateX(2px);
+}
+
+.sidebar-tab-item.editing-mode .tab-title-input {
+    background: rgba(52, 152, 219, 0.1);
+}
+
+/* Drag indicator for sidebar tabs */
+.sidebar-tab-item[draggable="true"]:hover {
+    cursor: grab;
+}
+
+.sidebar-tab-item[draggable="true"]:active {
+    cursor: grabbing;
+}
+
+/* Collapsed sidebar tab items - show only favicon */
+.bookmarks-sidebar.collapsed .sidebar-tab-item {
+    padding: 8px;
+    gap: 0;
+    justify-content: center;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    width: 44px;
+    height: 44px;
+    position: relative;
+}
+
+.bookmarks-sidebar.collapsed .tab-favicon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.bookmarks-sidebar.collapsed .tab-info,
+.bookmarks-sidebar.collapsed .sidebar-header {
+    display: none !important;
+}
+
+/* Tooltip styles for collapsed sidebar */
+.sidebar-tab-item .tab-tooltip {
+    position: absolute;
+    left: calc(100% + 8px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    z-index: 1001;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    max-width: 300px;
+    pointer-events: none;
+    line-height: 1.4;
+}
+
+.sidebar-tab-item .tab-tooltip::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: -4px;
+    transform: translateY(-50%);
+    border: 4px solid transparent;
+    border-right-color: rgba(0, 0, 0, 0.9);
+}
+
+/* Show tooltip only in collapsed state on hover */
+.bookmarks-sidebar.collapsed .sidebar-tab-item:hover .tab-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transition-delay: 0.3s;
+}
+
+/* Ensure tooltip is hidden in expanded state */
+.bookmarks-sidebar.visible .sidebar-tab-item .tab-tooltip {
+    display: none;
+}
+
+/* Main Content Styles */
+.bookmarks-main-content {
+    flex: 1;
+    padding: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    /* Default to collapsed state */
+    margin-left: 58px;
+}
+
+.bookmarks-main-content.sidebar-visible {
+    margin-left: 278px;
+}
+
+.bookmarks-main-content.sidebar-collapsed {
+    margin-left: 58px;
+}
+
+/* Floating Actions */
+.floating-actions {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.groups-counter {
+    background: rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.floating-add-group {
+    background: rgba(52, 152, 219, 0.9);
+    color: white;
+    border: none;
+    padding: 8px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+    backdrop-filter: blur(10px);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.floating-add-group:hover:not(:disabled) {
+    background: rgba(52, 152, 219, 1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+}
+
+.floating-add-group:disabled {
+    background: rgba(189, 195, 199, 0.5);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Clean Groups Container */
+.clean-groups-container {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    height: 100vh;
+    padding: 0;
+    margin: 0;
+    background: rgba(255, 255, 255, 0.02);
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.clean-groups-container::-webkit-scrollbar {
+    height: 6px;
+}
+
+.clean-groups-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+}
+
+.clean-groups-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
+
+.clean-groups-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Clean Bookmark Group */
+.clean-bookmark-group {
+    min-width: 280px;
+    flex: 1;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.clean-bookmark-group:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+/* Clean Group Header */
+.clean-group-header {
+    padding: 12px 16px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(5px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    overflow: visible;
+}
+
+/* Group Content Container */
+.group-content {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Group Display Mode (default view) */
+.group-display-mode {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.group-title-display {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.3;
+    cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+    margin-right: 8px;
+}
+
+.group-stats {
+    background: rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.8);
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    min-width: 18px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+/* Group Edit Mode (when editing) */
+.group-edit-mode {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 4px 0;
+}
+
+.group-edit-mode.hidden {
+    display: none;
+}
+
+.group-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.group-input-label {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.group-edit-mode .group-title-input {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    outline: none;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    width: 100%;
+}
+
+.group-edit-mode .group-title-input:focus {
+    border-color: rgba(52, 152, 219, 0.6);
+    background: rgba(52, 152, 219, 0.1);
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.group-edit-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.group-save-btn,
+.group-cancel-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    font-size: 11px;
+    font-weight: 500;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.group-save-btn {
+    background: rgba(46, 204, 113, 0.8);
+    color: white;
+}
+
+.group-save-btn:hover {
+    background: rgba(46, 204, 113, 1);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(46, 204, 113, 0.3);
+}
+
+.group-cancel-btn {
+    background: rgba(231, 76, 60, 0.8);
+    color: white;
+}
+
+.group-cancel-btn:hover {
+    background: rgba(231, 76, 60, 1);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(231, 76, 60, 0.3);
+}
+
+/* Group Inline Actions */
+.group-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: all 0.2s ease;
+    margin-left: 8px;
+    flex-shrink: 0;
+}
+
+.clean-group-header:hover .group-actions {
+    opacity: 1;
+}
+
+.group-edit-btn,
+.group-delete-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(5px);
+}
+
+.group-edit-btn:hover {
+    background: rgba(52, 152, 219, 0.8);
+    color: white;
+    transform: translateY(-1px) scale(1.05);
+    box-shadow: 0 3px 8px rgba(52, 152, 219, 0.3);
+}
+
+.group-delete-btn:hover {
+    background: rgba(231, 76, 60, 0.8);
+    color: white;
+    transform: translateY(-1px) scale(1.05);
+    box-shadow: 0 3px 8px rgba(231, 76, 60, 0.3);
+}
+
+.group-edit-btn:active,
+.group-delete-btn:active {
+    transform: translateY(0) scale(0.95);
+}
+
+/* Legacy group title styles (kept for compatibility) */
+.clean-group-title {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    flex: 1;
+    min-width: 0;
+}
+
+.clean-group-title:hover,
+.clean-group-title:focus {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 1);
+}
+
+/* Clean Bookmarks List */
+.clean-bookmarks-list {
+    flex: 1;
+    padding: 8px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.clean-bookmarks-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.clean-bookmarks-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.clean-bookmarks-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+}
+
+.clean-bookmarks-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Clean Bookmark Item */
+.clean-bookmark-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px;
+    margin-bottom: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid transparent;
+    min-height: 36px;
+    user-select: none;
+}
+
+.clean-bookmark-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateX(2px);
+}
+
+.clean-bookmark-item.dragging {
+    opacity: 0.7;
+    transform: rotate(1deg) scale(0.95);
+    z-index: 1000;
+}
+
+.clean-bookmark-item.editing-mode {
+    background: rgba(52, 152, 219, 0.15);
+    border-color: rgba(52, 152, 219, 0.4);
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.2);
+}
+
+/* Bookmark Display Mode (default view) */
+.bookmark-display-mode {
+    flex: 1;
+    min-width: 0;
+}
+
+.bookmark-title-display {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.3;
+    margin-bottom: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.bookmark-url-display {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 11px;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+/* Bookmark Edit Mode (when editing) */
+.bookmark-edit-mode {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 4px 0;
+}
+
+.bookmark-edit-mode.hidden {
+    display: none;
+}
+
+.bookmark-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.bookmark-input-label {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.bookmark-edit-mode .bookmark-title-input,
+.bookmark-edit-mode .bookmark-url-input {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    outline: none;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 12px;
+    padding: 6px 8px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.bookmark-edit-mode .bookmark-title-input:focus,
+.bookmark-edit-mode .bookmark-url-input:focus {
+    border-color: rgba(52, 152, 219, 0.6);
+    background: rgba(52, 152, 219, 0.1);
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.bookmark-edit-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.bookmark-save-btn,
+.bookmark-cancel-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    font-size: 11px;
+    font-weight: 500;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.bookmark-save-btn {
+    background: rgba(46, 204, 113, 0.8);
+    color: white;
+}
+
+.bookmark-save-btn:hover {
+    background: rgba(46, 204, 113, 1);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(46, 204, 113, 0.3);
+}
+
+.bookmark-cancel-btn {
+    background: rgba(231, 76, 60, 0.8);
+    color: white;
+}
+
+.bookmark-cancel-btn:hover {
+    background: rgba(231, 76, 60, 1);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(231, 76, 60, 0.3);
+}
+
+/* Bookmark Inline Actions */
+.bookmark-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    opacity: 0;
+    transition: all 0.2s ease;
+    margin-left: 4px;
+}
+
+.clean-bookmark-item:hover .bookmark-actions {
+    opacity: 1;
+}
+
+.bookmark-edit-btn,
+.bookmark-delete-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(5px);
+}
+
+.bookmark-edit-btn:hover {
+    background: rgba(52, 152, 219, 0.8);
+    color: white;
+    transform: translateY(-1px) scale(1.05);
+    box-shadow: 0 3px 8px rgba(52, 152, 219, 0.3);
+}
+
+.bookmark-delete-btn:hover {
+    background: rgba(231, 76, 60, 0.8);
+    color: white;
+    transform: translateY(-1px) scale(1.05);
+    box-shadow: 0 3px 8px rgba(231, 76, 60, 0.3);
+}
+
+.bookmark-edit-btn:active,
+.bookmark-delete-btn:active {
+    transform: translateY(0) scale(0.95);
+}
+
+/* Bookmark Content */
+.bookmark-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.bookmark-title-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 2px;
+    width: 100%;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    cursor: text;
+    line-height: 1.2;
+}
+
+.bookmark-title-input:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 1px 3px; /* Adjust for border */
+}
+
+.bookmark-title-input:focus {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(52, 152, 219, 0.4);
+    padding: 1px 3px; /* Adjust for border */
+    user-select: text;
+}
+
+/* Bookmark URL Section - Same as sidebar */
+.clean-bookmark-item .bookmark-url-section {
+    margin-top: 4px;
+    opacity: 1;
+    max-height: 50px;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.clean-bookmark-item .bookmark-url-section.hidden {
+    opacity: 0;
+    max-height: 0;
+    margin-top: 0;
+    pointer-events: none;
+}
+
+.clean-bookmark-item .url-label {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+    display: block;
+}
+
+.clean-bookmark-item .bookmark-url-input {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    outline: none;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 11px;
+    width: 100%;
+    padding: 3px 6px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.clean-bookmark-item .bookmark-url-input:hover,
+.clean-bookmark-item .bookmark-url-input:focus {
+    border-color: rgba(52, 152, 219, 0.5);
+    background: rgba(52, 152, 219, 0.05);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Drag Over Effect */
+.clean-bookmarks-list.drag-over {
+    background: rgba(52, 152, 219, 0.1);
+    border: 2px dashed rgba(52, 152, 219, 0.5);
+    border-radius: 8px;
+}
+
+/* Empty State */
+.group-empty-message {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 13px;
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+}
+
+/* Context Menus */
+.bookmark-context-menu,
+.group-context-menu {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 4px 0;
+    min-width: 160px;
+    user-select: none;
+    font-size: 13px;
+}
+
+.context-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #2c3e50;
+}
+
+.context-menu-item:hover {
+    background: rgba(52, 152, 219, 0.1);
+    color: #2c3e50;
+}
+
+.context-menu-item.danger {
+    color: #e74c3c;
+}
+
+.context-menu-item.danger:hover {
+    background: rgba(231, 76, 60, 0.1);
+    color: #c0392b;
+}
+
+.context-menu-divider {
+    height: 1px;
+    background: rgba(189, 195, 199, 0.3);
+    margin: 4px 0;
+}
+
+.context-menu-item svg {
+    flex-shrink: 0;
+    opacity: 0.8;
+}
+
+.group-action-btn.add-bookmark-btn:hover {
+    background: linear-gradient(135deg, #229954, #27ae60);
+}
+
+.group-action-btn.delete-btn {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+}
+
+.group-action-btn.delete-btn:hover {
+    background: linear-gradient(135deg, #c0392b, #a93226);
+}
+
+.color-indicator {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+}
+
+/* Bookmark Group Content */
+.bookmark-group-content {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    min-height: 200px;
+    position: relative;
+}
+
+.bookmark-group-content.drag-over {
+    background: rgba(52, 152, 219, 0.1);
+    border: 2px dashed #3498db;
+    border-radius: 12px;
+}
+
+.group-empty {
+    text-align: center;
+    color: #95a5a6;
+    font-style: italic;
+    padding: 40px 20px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: calc(100% - 40px);
+}
+
+/* Bookmark Item */
+.bookmark-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    margin-bottom: 8px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    position: relative;
+    overflow: hidden;
+}
+
+.bookmark-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(52, 152, 219, 0.1), transparent);
+    transition: left 0.5s ease;
+}
+
+.bookmark-item:hover::before {
+    left: 100%;
+}
+
+.bookmark-item:hover {
+    background: rgba(255, 255, 255, 1);
+    border-color: #3498db;
+    transform: translateX(4px);
+    box-shadow: 0 4px 16px rgba(52, 152, 219, 0.2);
+}
+
+.bookmark-item.dragging {
+    opacity: 0.7;
+    transform: rotate(2deg) scale(0.95);
+    z-index: 1000;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.bookmark-favicon {
+    width: 16px;
+    height: 16px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.bookmark-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.bookmark-title {
+    color: #2c3e50;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+}
+
+.bookmark-url {
+    color: #7f8c8d;
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+}
+
+.bookmark-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transform: translateX(10px);
+    transition: all 0.3s ease;
+}
+
+.bookmark-item:hover .bookmark-actions {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.bookmark-action-btn {
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    color: white;
+}
+
+.bookmark-action-btn.edit-btn {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+}
+
+.bookmark-action-btn.edit-btn:hover {
+    background: linear-gradient(135deg, #2980b9, #21618c);
+    transform: scale(1.1);
+}
+
+.bookmark-action-btn.delete-btn {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+}
+
+.bookmark-action-btn.delete-btn:hover {
+    background: linear-gradient(135deg, #c0392b, #a93226);
+    transform: scale(1.1);
+}
+
+/* Bookmark Modal Styles */
+.bookmark-modal-content {
+    width: 100%;
+    max-width: 500px;
+}
+
+/* Color Picker */
+.color-picker {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    padding: 20px 0;
+}
+
+.color-option {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 3px solid transparent;
+    position: relative;
+}
+
+.color-option:hover {
+    transform: scale(1.2);
+    border-color: rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.color-option::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 16px;
+    height: 16px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.color-option:hover::after {
+    opacity: 1;
+}
+
+/* Custom scrollbars for bookmark content */
+.bookmark-group-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.bookmark-group-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 3px;
+}
+
+.bookmark-group-content::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+}
+
+.bookmark-group-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+/* Sidebar scrollbar */
+.sidebar-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 3px;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb {
+    background: rgba(102, 126, 234, 0.3);
+    border-radius: 3px;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(102, 126, 234, 0.5);
+}
+
+/* Responsive Design for Bookmarks */
+@media (max-width: 1200px) {
+    .bookmarks-main-content.sidebar-visible {
+        margin-left: 258px;
+    }
+    
+    .bookmarks-main-content.sidebar-collapsed {
+        margin-left: 58px;
+    }
+    
+    .bookmark-group {
+        min-width: 280px;
+        max-width: 280px;
+    }
+    
+    .bookmarks-sidebar.visible {
+        width: 260px;
+        padding: 14px;
+        box-sizing: border-box;
+    }
+    
+    .bookmarks-sidebar.collapsed {
+        width: 60px;
+        padding: 14px 8px;
+        box-sizing: border-box;
+    }
+}
+
+@media (max-width: 900px) {
+    .bookmarks-main-content.sidebar-visible {
+        margin-left: 238px;
+    }
+    
+    .bookmarks-main-content.sidebar-collapsed {
+        margin-left: 54px;
+    }
+    
+    .floating-actions {
+        top: 10px;
+        right: 10px;
+        gap: 6px;
+    }
+    
+    .clean-bookmark-group {
+        min-width: 240px;
+    }
+    
+    .bookmarks-header {
+        flex-direction: column;
+        gap: 20px;
+        align-items: stretch;
+        margin-bottom: 20px;
+    }
+    
+    .bookmarks-title {
+        font-size: 28px;
+    }
+    
+    .bookmark-group {
+        min-width: 260px;
+        max-width: 260px;
+    }
+    
+    .bookmarks-sidebar.visible {
+        width: 240px;
+        padding: 12px;
+        box-sizing: border-box;
+    }
+    
+    .bookmarks-sidebar.collapsed {
+        width: 56px;
+        padding: 12px 6px;
+        box-sizing: border-box;
+    }
+}
+
+@media (max-width: 600px) {
+    .bookmarks-sidebar.visible {
+        position: fixed;
+        left: 0;
+        top: 0;
+        height: 100vh;
+        z-index: 1001;
+        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+    }
+    
+    .bookmarks-sidebar.collapsed {
+        position: fixed;
+        left: 0;
+        top: 0;
+        height: 100vh;
+        width: 54px;
+        padding: 12px 6px;
+        z-index: 1001;
+        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+    }
+    
+    .bookmarks-main-content.sidebar-visible,
+    .bookmarks-main-content.sidebar-collapsed {
+        margin-left: 0;
+    }
+    
+    .clean-bookmark-group {
+        min-width: 200px;
+    }
+    
+    .floating-actions {
+        top: 8px;
+        right: 8px;
+    }
+    
+    .sidebar-toggle-btn {
+        z-index: 1002;
+    }
+    
+    .bookmark-groups-container {
+        padding: 12px;
+        gap: 16px;
+    }
+    
+    .bookmark-group {
+        min-width: 240px;
+        max-width: 240px;
+    }
+    
+    .bookmarks-title {
+        font-size: 24px;
+    }
+    
+    .add-group-btn {
+        padding: 12px 20px;
+        font-size: 14px;
+    }
+}
+
+/* Animation for bookmark items */
+@keyframes bookmarkSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.bookmark-item {
+    animation: bookmarkSlideIn 0.3s ease forwards;
 }

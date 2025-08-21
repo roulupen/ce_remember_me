@@ -1,14 +1,25 @@
-// Productivity App with Sticky Notes and Task Tracker
+// Productivity Hub - Complete workspace with Notes, Tasks, and Bookmarks
 class ProductivityApp {
     constructor() {
         this.utility = new Utility();
         this.stickyNotes = new StickyNotes();
         this.taskTracker = new TaskTracker();
+        this.bookmarks = new Bookmarks();
         this.notificationSound = new NotificationSound();
+        
+        // Theme management
+        this.currentTheme = 'light'; // Default theme
+        this.storage = chrome.storage.local;
+        this.themeStorageKey = 'app_theme';
+        
+        // Tab persistence
+        this.currentTab = 'notes-tab'; // Default tab
+        this.tabStorageKey = 'app_current_tab';
         
         // Expose modules globally for onclick handlers
         window.stickyNotes = this.stickyNotes;
         window.taskTracker = this.taskTracker;
+        window.bookmarks = this.bookmarks;
         
         this.init();
     }
@@ -17,6 +28,10 @@ class ProductivityApp {
         console.log('[ProductivityApp] Initializing...');
         
         try {
+            // Load saved preferences first (before showing UI)
+            await this.loadTheme();
+            await this.loadTab();
+            
             // Show loading indicator
             this.showLoadingIndicator();
             
@@ -24,6 +39,7 @@ class ProductivityApp {
             const initPromises = [
                 this.stickyNotes.init(),
                 this.taskTracker.init(),
+                this.bookmarks.init(),
                 this.notificationSound.init()
             ];
             
@@ -33,13 +49,24 @@ class ProductivityApp {
             // Setup message listeners for sound system
             this.setupMessageListeners();
             
+            // Setup tab switching functionality
+            this.setupTabSwitching();
+            
+            // Setup theme toggle functionality
+            this.setupThemeToggle();
+            
             // Load and render data for both tabs to ensure consistency
             await this.loadAllData();
+            
+            // Apply saved tab after all modules are initialized
+            await this.applySavedTab();
             
             // Hide loading indicator
             this.hideLoadingIndicator();
             
-            console.log('[ProductivityApp] Initialization complete');
+            console.log('[ProductivityApp] === INITIALIZATION COMPLETE ===');
+            console.log('[ProductivityApp] Active theme:', this.currentTheme);
+            console.log('[ProductivityApp] Active tab:', this.currentTab);
         } catch (error) {
             console.error('[ProductivityApp] Initialization failed:', error);
             this.hideLoadingIndicator();
@@ -51,10 +78,11 @@ class ProductivityApp {
         console.log('[ProductivityApp] Loading all data...');
         
         try {
-            // Load notes and tasks data in parallel
+            // Load notes, tasks and bookmarks data in parallel
             const loadPromises = [
                 this.loadNotesData(),
-                this.loadTasksData()
+                this.loadTasksData(),
+                this.loadBookmarksData()
             ];
             
             await Promise.all(loadPromises);
@@ -89,6 +117,18 @@ class ProductivityApp {
             console.log('[ProductivityApp] Tasks loaded successfully');
         } catch (error) {
             console.error('[ProductivityApp] Error loading tasks:', error);
+            throw error;
+        }
+    }
+
+    async loadBookmarksData() {
+        console.log('[ProductivityApp] Loading bookmarks data...');
+        try {
+            // Ensure bookmarks are loaded and ready
+            await this.bookmarks.loadBookmarks();
+            console.log('[ProductivityApp] Bookmarks loaded successfully');
+        } catch (error) {
+            console.error('[ProductivityApp] Error loading bookmarks:', error);
             throw error;
         }
     }
@@ -143,10 +183,16 @@ class ProductivityApp {
             <div class="error-content">
                 <h3>⚠️ Loading Error</h3>
                 <p>${message}</p>
-                <button onclick="location.reload()" class="retry-btn">Retry</button>
+                <button class="retry-btn" id="error-retry-btn">Retry</button>
             </div>
         `;
         document.body.appendChild(errorDiv);
+        
+        // Add event listener for retry button
+        const retryBtn = document.getElementById('error-retry-btn');
+        if (retryBtn) {
+            retryBtn.addEventListener('click', () => location.reload());
+        }
     }
 
     setupMessageListeners() {
@@ -205,10 +251,333 @@ class ProductivityApp {
         console.log('🔕 Task stopped ringing:', message.taskId);
         this.taskTracker.handleTaskRingingStopped(message);
     }
+
+    setupTabSwitching() {
+        console.log('[ProductivityApp] Setting up tab switching...');
+        
+        // Tab switching functionality
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const tabId = e.target.closest('.tab-btn').dataset.tab;
+                this.switchTab(tabId);
+            });
+        });
+    }
+
+    async switchTab(tabId) {
+        console.log('[ProductivityApp] Switching to tab:', tabId);
+        
+        try {
+            // Save current tab selection for persistence
+            this.currentTab = tabId;
+            await this.saveTab();
+            
+            // Update tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-tab="${tabId}"]`)?.classList.add('active');
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabId)?.classList.add('active');
+
+            // Render content for the active tab
+            switch (tabId) {
+                case 'notes-tab':
+                    console.log('[ProductivityApp] Rendering Notes tab');
+                    if (this.stickyNotes.stickyNotes && this.stickyNotes.stickyNotes.length > 0) {
+                        this.stickyNotes.renderFloatingNotes(true);
+                    }
+                    break;
+                    
+                case 'tasks-tab':
+                    console.log('[ProductivityApp] Rendering Tasks tab');
+                    await this.taskTracker.renderTasks();
+                    break;
+                    
+                case 'bookmarks-tab':
+                    console.log('[ProductivityApp] Rendering Bookmarks tab');
+                    await this.bookmarks.renderBookmarks();
+                    // Note: renderBookmarks already calls renderSidebar, so no need to call refreshSidebar
+                    break;
+            }
+            
+            console.log('[ProductivityApp] Tab switched and saved:', tabId);
+        } catch (error) {
+            console.error('[ProductivityApp] Error switching tabs:', error);
+        }
+    }
+
+    // Tab Persistence Methods
+    async loadTab() {
+        try {
+            console.log('[ProductivityApp] Loading saved tab...');
+            const data = await this.storage.get(this.tabStorageKey);
+            
+            if (data[this.tabStorageKey]) {
+                this.currentTab = data[this.tabStorageKey];
+                console.log('[ProductivityApp] Loaded saved tab:', this.currentTab);
+                
+                // Validate that the saved tab exists
+                const validTabs = ['notes-tab', 'tasks-tab', 'bookmarks-tab'];
+                if (!validTabs.includes(this.currentTab)) {
+                    console.warn('[ProductivityApp] Invalid saved tab, using default:', this.currentTab);
+                    this.currentTab = 'notes-tab';
+                }
+            } else {
+                this.currentTab = 'notes-tab'; // Default to notes tab
+                console.log('[ProductivityApp] No saved tab, using default: notes-tab');
+            }
+            
+        } catch (error) {
+            console.error('[ProductivityApp] Error loading tab:', error);
+            this.currentTab = 'notes-tab';
+        }
+    }
+
+    async saveTab() {
+        try {
+            await this.storage.set({ [this.tabStorageKey]: this.currentTab });
+            console.log('[ProductivityApp] Tab saved:', this.currentTab);
+        } catch (error) {
+            console.error('[ProductivityApp] Error saving tab:', error);
+        }
+    }
+
+    async applySavedTab() {
+        console.log('[ProductivityApp] === APPLYING SAVED TAB ===');
+        console.log('[ProductivityApp] Saved tab to apply:', this.currentTab);
+        
+        try {
+            // Always switch to the saved tab to ensure proper initialization
+            console.log('[ProductivityApp] Switching to saved tab:', this.currentTab);
+            
+            // Remove any existing active classes (in case HTML had hardcoded ones)
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            // Apply the saved tab
+            await this.switchTab(this.currentTab);
+            
+            console.log('[ProductivityApp] Saved tab applied successfully');
+        } catch (error) {
+            console.error('[ProductivityApp] Error applying saved tab:', error);
+            // Fallback to notes tab
+            console.log('[ProductivityApp] Falling back to default notes tab');
+            await this.switchTab('notes-tab');
+        }
+    }
+
+    // Theme Management Methods
+    async loadTheme() {
+        try {
+            console.log('[ProductivityApp] Loading saved theme...');
+            const data = await this.storage.get(this.themeStorageKey);
+            
+            if (data[this.themeStorageKey]) {
+                this.currentTheme = data[this.themeStorageKey];
+                console.log('[ProductivityApp] Loaded saved theme:', this.currentTheme);
+            } else {
+                this.currentTheme = 'light'; // Default to light theme
+                console.log('[ProductivityApp] No saved theme, using default: light');
+            }
+            
+            // Apply theme immediately
+            this.applyTheme(this.currentTheme);
+            
+        } catch (error) {
+            console.error('[ProductivityApp] Error loading theme:', error);
+            this.currentTheme = 'light';
+            this.applyTheme(this.currentTheme);
+        }
+    }
+
+    async saveTheme() {
+        try {
+            await this.storage.set({ [this.themeStorageKey]: this.currentTheme });
+            console.log('[ProductivityApp] Theme saved:', this.currentTheme);
+        } catch (error) {
+            console.error('[ProductivityApp] Error saving theme:', error);
+        }
+    }
+
+    applyTheme(theme) {
+        console.log('[ProductivityApp] Applying theme:', theme);
+        
+        // Remove existing theme classes
+        document.body.classList.remove('light-theme', 'dark-theme');
+        
+        // Add new theme class
+        document.body.classList.add(`${theme}-theme`);
+        
+        // Update theme toggle button
+        this.updateThemeToggleButton();
+        
+        console.log('[ProductivityApp] Theme applied successfully:', theme);
+    }
+
+    toggleTheme() {
+        console.log('[ProductivityApp] === TOGGLE THEME START ===');
+        console.log('[ProductivityApp] Current theme:', this.currentTheme);
+        
+        // Toggle between light and dark
+        this.currentTheme = this.currentTheme === 'light' ? 'dark' : 'light';
+        
+        console.log('[ProductivityApp] New theme:', this.currentTheme);
+        
+        // Apply new theme
+        this.applyTheme(this.currentTheme);
+        
+        // Save theme preference
+        this.saveTheme();
+        
+        // Show feedback message
+        this.showThemeChangeMessage();
+        
+        console.log('[ProductivityApp] === TOGGLE THEME COMPLETE ===');
+    }
+
+    updateThemeToggleButton() {
+        const toggleBtn = document.getElementById('theme-toggle-btn');
+        const lightIcon = toggleBtn?.querySelector('.light-icon');
+        const darkIcon = toggleBtn?.querySelector('.dark-icon');
+        
+        if (toggleBtn && lightIcon && darkIcon) {
+            if (this.currentTheme === 'dark') {
+                lightIcon.classList.add('hidden');
+                darkIcon.classList.remove('hidden');
+                toggleBtn.title = 'Switch to Light Theme';
+            } else {
+                lightIcon.classList.remove('hidden');
+                darkIcon.classList.add('hidden');
+                toggleBtn.title = 'Switch to Dark Theme';
+            }
+        }
+    }
+
+    showThemeChangeMessage() {
+        // Create temporary message
+        const message = document.createElement('div');
+        message.className = 'theme-change-message';
+        message.innerHTML = `
+            <div class="theme-message-content">
+                <div class="theme-message-icon">
+                    ${this.currentTheme === 'dark' ? '🌙' : '☀️'}
+                </div>
+                <div class="theme-message-text">
+                    Switched to ${this.currentTheme} theme
+                </div>
+            </div>
+        `;
+        
+        // Style the message
+        message.style.cssText = `
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            background: ${this.currentTheme === 'dark' 
+                ? 'rgba(93, 173, 226, 0.9)' 
+                : 'rgba(52, 152, 219, 0.9)'};
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 10001;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(10px);
+            animation: slideInRight 0.3s ease-out;
+        `;
+        
+        // Style the content
+        const contentEl = message.querySelector('.theme-message-content');
+        contentEl.style.cssText = `
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        `;
+        
+        const iconEl = message.querySelector('.theme-message-icon');
+        iconEl.style.cssText = `
+            font-size: 16px;
+            flex-shrink: 0;
+        `;
+        
+        // Add to DOM
+        document.body.appendChild(message);
+        
+        // Auto-remove after delay
+        setTimeout(() => {
+            if (message.parentNode) {
+                message.style.animation = 'slideOutRight 0.3s ease-in';
+                setTimeout(() => {
+                    if (message.parentNode) {
+                        message.remove();
+                    }
+                }, 300);
+            }
+        }, 2000);
+    }
+
+    setupThemeToggle() {
+        console.log('[ProductivityApp] Setting up theme toggle...');
+        
+        const themeToggleBtn = document.getElementById('theme-toggle-btn');
+        if (themeToggleBtn) {
+            themeToggleBtn.addEventListener('click', (e) => {
+                console.log('[ProductivityApp] Theme toggle clicked');
+                e.preventDefault();
+                e.stopPropagation();
+                this.toggleTheme();
+            });
+            
+            console.log('[ProductivityApp] Theme toggle listener attached');
+        } else {
+            console.error('[ProductivityApp] Theme toggle button not found!');
+        }
+    }
 }
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.productivityApp = new ProductivityApp();
-    console.log('Productivity App initialized');
+    
+    // Expose debug functions globally
+    window.debugTheme = () => {
+        console.log('[Theme Debug] Current theme:', window.productivityApp.currentTheme);
+        console.log('[Theme Debug] Body classes:', document.body.className);
+        console.log('[Theme Debug] Theme toggle button found:', !!document.getElementById('theme-toggle-btn'));
+        const toggleBtn = document.getElementById('theme-toggle-btn');
+        if (toggleBtn) {
+            console.log('[Theme Debug] Button title:', toggleBtn.title);
+            console.log('[Theme Debug] Light icon hidden:', toggleBtn.querySelector('.light-icon')?.classList.contains('hidden'));
+            console.log('[Theme Debug] Dark icon hidden:', toggleBtn.querySelector('.dark-icon')?.classList.contains('hidden'));
+        }
+    };
+    
+    window.debugTab = () => {
+        console.log('[Tab Debug] Current tab:', window.productivityApp.currentTab);
+        console.log('[Tab Debug] Active tab button:', document.querySelector('.tab-btn.active')?.dataset.tab);
+        console.log('[Tab Debug] Active tab content:', document.querySelector('.tab-content.active')?.id);
+        console.log('[Tab Debug] Available tabs:', Array.from(document.querySelectorAll('.tab-btn')).map(btn => btn.dataset.tab));
+    };
+    
+    window.debugApp = () => {
+        window.debugTheme();
+        window.debugTab();
+        console.log('[App Debug] All modules initialized:', {
+            stickyNotes: !!window.stickyNotes,
+            taskTracker: !!window.taskTracker,
+            bookmarks: !!window.bookmarks
+        });
+    };
+    
+    // Expose toggle functions globally for testing
+    window.toggleTheme = () => window.productivityApp.toggleTheme();
+    window.switchToTab = (tabId) => window.productivityApp.switchTab(tabId);
+    
+    console.log('Productivity Hub initialized with theme system and tab persistence');
 });

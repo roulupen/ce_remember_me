@@ -2,12 +2,16 @@
   "manifest_version": 3,
   "name": "Productivity Hub",
   "version": "2.0.0",
-  "description": "Elegant sticky notes and daily task tracker for your new tab page",
+  "description": "Complete productivity workspace with sticky notes, task tracking, bookmark management, and beautiful themes for your new tab page",
   "permissions": [
     "storage",
     "notifications",
     "alarms",
-    "activeTab"
+    "activeTab",
+    "tabs"
+  ],
+  "host_permissions": [
+    "*://*/*"
   ],
   "background": {
     "service_worker": "background.js"

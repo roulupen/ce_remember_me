@@ -66,6 +66,24 @@ class StickyNotes {
                 }
             }
         });
+
+        // Handle note card actions with event delegation
+        document.addEventListener('click', (e) => {
+            const actionBtn = e.target.closest('.note-card-action');
+            if (actionBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const action = actionBtn.dataset.action;
+                const noteId = actionBtn.dataset.noteId;
+                
+                if (action === 'edit') {
+                    this.editNoteInTab(noteId);
+                } else if (action === 'delete') {
+                    this.deleteNoteFromTab(noteId);
+                }
+            }
+        });
     }
 
     setupStorageListener() {
@@ -895,8 +913,8 @@ class StickyNotes {
                     </div>
                     <div class="note-card-content">${this.util.escapeHtml(this.util.truncateText(note.content || '', 100))}</div>
                     <div class="note-card-actions">
-                        <button class="note-card-action" onclick="stickyNotes.editNoteInTab('${note.id}')">✏️</button>
-                        <button class="note-card-action" onclick="stickyNotes.deleteNoteFromTab('${note.id}')">🗑️</button>
+                        <button class="note-card-action" data-action="edit" data-note-id="${note.id}">✏️</button>
+                        <button class="note-card-action" data-action="delete" data-note-id="${note.id}">🗑️</button>
                     </div>
                 </div>
             `;

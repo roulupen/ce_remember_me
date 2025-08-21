@@ -3,30 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sticky Notes - Remember Me</title>
+    <title>Productivity Hub</title>
     <link rel="stylesheet" href="newtab.css">
 </head>
-<body>
+<body class="light-theme">
     <div class="container">
         <!-- Tab Navigation -->
         <nav class="tab-navigation">
-            <button class="tab-btn active" data-tab="notes-tab">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                    <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/>
+            <div class="tab-buttons">
+                <button class="tab-btn" data-tab="notes-tab">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/>
+                    </svg>
+                    <span>Notes</span>
+                </button>
+                <button class="tab-btn" data-tab="tasks-tab">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M2.5 3A1.5 1.5 0 0 0 1 4.5v.793c.026.009.051.02.076.032L7.674 8.51c.206.1.446.1.652 0l6.598-3.185A.755.755 0 0 1 15 5.293V4.5A1.5 1.5 0 0 0 13.5 3h-11Z"/>
+                        <path d="M15 6.954 8.978 9.86a2.25 2.25 0 0 1-1.956 0L1 6.954V11.5A1.5 1.5 0 0 0 2.5 13h11a1.5 1.5 0 0 0 1.5-1.5V6.954Z"/>
+                    </svg>
+                    <span>Tasks</span>
+                </button>
+                <button class="tab-btn" data-tab="bookmarks-tab">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v13.5a.5.5 0 0 1-.777.416L8 13.101l-5.223 2.815A.5.5 0 0 1 2 15.5V2zm2-1a1 1 0 0 0-1 1v12.566l4.723-2.482a.5.5 0 0 1 .554 0L13 14.566V2a1 1 0 0 0-1-1H4z"/>
+                    </svg>
+                    <span>Bookmarks</span>
+                </button>
+            </div>
+            
+            <!-- Theme Toggle Button -->
+            <button id="theme-toggle-btn" class="theme-toggle-btn" title="Toggle Theme">
+                <svg class="theme-icon light-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm0 1a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0zm0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13zm8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5zM3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8zm10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.415a.5.5 0 1 1-.707-.708l1.414-1.414a.5.5 0 0 1 .707 0zm-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0zm9.193 2.121a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707zM4.464 4.465a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .708z"/>
                 </svg>
-                <span>Notes</span>
-            </button>
-            <button class="tab-btn" data-tab="tasks-tab">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                    <path d="M2.5 3A1.5 1.5 0 0 0 1 4.5v.793c.026.009.051.02.076.032L7.674 8.51c.206.1.446.1.652 0l6.598-3.185A.755.755 0 0 1 15 5.293V4.5A1.5 1.5 0 0 0 13.5 3h-11Z"/>
-                    <path d="M15 6.954 8.978 9.86a2.25 2.25 0 0 1-1.956 0L1 6.954V11.5A1.5 1.5 0 0 0 2.5 13h11a1.5 1.5 0 0 0 1.5-1.5V6.954Z"/>
+                <svg class="theme-icon dark-icon hidden" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M6 .278a.768.768 0 0 1 .08.858 7.208 7.208 0 0 0-.878 3.46c0 4.021 3.278 7.277 7.318 7.277.527 0 1.04-.055 1.533-.16a.787.787 0 0 1 .81.316.733.733 0 0 1-.031.893A8.349 8.349 0 0 1 8.344 16C3.734 16 0 12.286 0 7.71 0 4.266 2.114 1.312 5.124.06A.752.752 0 0 1 6 .278z"/>
                 </svg>
-                <span>Tasks</span>
             </button>
         </nav>
 
         <!-- Sticky Notes Tab -->
-        <div class="tab-content active" id="notes-tab">
+        <div class="tab-content" id="notes-tab">
             <div class="notes-main-container">
                 <!-- Full-screen Floating Sticky Notes Container -->
                 <div id="notes-floating-container" class="notes-floating-container">
@@ -103,6 +121,21 @@
                 </div>
             </div>
         </div>
+
+        <!-- Bookmarks Tab -->
+        <div class="tab-content" id="bookmarks-tab">
+            <div class="bookmarks-container">
+                <!-- Left Sidebar - Current Tabs -->
+                <div id="bookmarks-sidebar" class="bookmarks-sidebar collapsed">
+                    <!-- Sidebar content (including toggle button) will be rendered by JavaScript -->
+                </div>
+
+                <!-- Main Content Area -->
+                <div id="bookmarks-main-content" class="bookmarks-main-content sidebar-collapsed">
+                    <!-- Main content will be rendered by JavaScript -->
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Task Modal -->
@@ -160,6 +193,9 @@
     
     <!-- Load task tracker module -->
     <script src="modules/TaskTracker.js"></script>
+    
+    <!-- Load bookmarks module -->
+    <script src="modules/Bookmarks.js"></script>
 
     <!-- Notification sound system -->
     <script src="notification-sound.js"></script>
