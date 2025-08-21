@@ -2332,15 +2332,11 @@ body.dark-theme .clear-notes-fab {
     flex-direction: column;
     position: relative;
     /* Default to collapsed state */
-    margin-left: 58px;
-}
-
-.bookmarks-main-content.sidebar-visible {
-    margin-left: 278px;
+    margin-left: 5px;
 }
 
 .bookmarks-main-content.sidebar-collapsed {
-    margin-left: 58px;
+    margin-left: 5px;
 }
 
 /* Floating Actions */
