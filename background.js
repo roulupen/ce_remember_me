@@ -59,100 +59,201 @@ class StickyNotesBackground {
             
             switch (message.action) {
                 case 'saveNote':
-                    await this.saveNote(message.note);
-                    sendResponse({ success: true });
+                    try {
+                        await this.saveNote(message.note);
+                        sendResponse({ success: true });
+                    } catch (saveError) {
+                        console.error('❌ Error in saveNote:', saveError);
+                        sendResponse({ success: false, error: saveError.message });
+                    }
                     break;
 
                 case 'getNotes':
-                    const notes = await this.getNotes();
-                    sendResponse({ success: true, data: notes });
+                    try {
+                        const notes = await this.getNotes();
+                        sendResponse({ success: true, data: notes });
+                    } catch (getError) {
+                        console.error('❌ Error in getNotes:', getError);
+                        sendResponse({ success: false, error: getError.message });
+                    }
                     break;
 
                 case 'deleteNote':
-                    await this.deleteNote(message.noteId);
-                    sendResponse({ success: true });
+                    try {
+                        await this.deleteNote(message.noteId);
+                        sendResponse({ success: true });
+                    } catch (deleteError) {
+                        console.error('❌ Error in deleteNote:', deleteError);
+                        sendResponse({ success: false, error: deleteError.message });
+                    }
                     break;
 
                 case 'clearAllNotes':
-                    await this.clearAllNotes();
-                    sendResponse({ success: true });
+                    try {
+                        await this.clearAllNotes();
+                        sendResponse({ success: true });
+                    } catch (clearError) {
+                        console.error('❌ Error in clearAllNotes:', clearError);
+                        sendResponse({ success: false, error: clearError.message });
+                    }
                     break;
 
                 case 'updateNotePosition':
-                    await this.updateNotePosition(message.noteId, message.x, message.y);
-                    sendResponse({ success: true });
+                    try {
+                        await this.updateNotePosition(message.noteId, message.x, message.y);
+                        sendResponse({ success: true });
+                    } catch (updateError) {
+                        console.error('❌ Error in updateNotePosition:', updateError);
+                        sendResponse({ success: false, error: updateError.message });
+                    }
                     break;
 
                 case 'updateNoteSize':
-                    await this.updateNoteSize(message.noteId, message.width, message.height);
-                    sendResponse({ success: true });
+                    try {
+                        await this.updateNoteSize(message.noteId, message.width, message.height);
+                        sendResponse({ success: true });
+                    } catch (updateError) {
+                        console.error('❌ Error in updateNoteSize:', updateError);
+                        sendResponse({ success: false, error: updateError.message });
+                    }
                     break;
 
                 case 'updateNoteContent':
-                    await this.updateNoteContent(message.noteId, message.content);
-                    sendResponse({ success: true });
+                    try {
+                        await this.updateNoteContent(message.noteId, message.content);
+                        sendResponse({ success: true });
+                    } catch (updateError) {
+                        console.error('❌ Error in updateNoteContent:', updateError);
+                        sendResponse({ success: false, error: updateError.message });
+                    }
                     break;
 
                 case 'updateNoteTitle':
-                    await this.updateNoteTitle(message.noteId, message.title);
-                    sendResponse({ success: true });
+                    try {
+                        await this.updateNoteTitle(message.noteId, message.title);
+                        sendResponse({ success: true });
+                    } catch (updateError) {
+                        console.error('❌ Error in updateNoteTitle:', updateError);
+                        sendResponse({ success: false, error: updateError.message });
+                    }
                     break;
 
                 // Task management actions
                 case 'saveTask':
-                    await this.saveTask(message.task);
-                    sendResponse({ success: true });
+                    try {
+                        await this.saveTask(message.task);
+                        console.log('✅ Task saved successfully, sending success response');
+                        sendResponse({ success: true });
+                    } catch (saveError) {
+                        console.error('❌ Error in saveTask:', saveError);
+                        sendResponse({ success: false, error: saveError.message });
+                    }
                     break;
 
                 case 'getTasks':
-                    const tasks = await this.getTasks();
-                    sendResponse({ success: true, data: tasks });
+                    try {
+                        const tasks = await this.getTasks();
+                        sendResponse({ success: true, data: tasks });
+                    } catch (getError) {
+                        console.error('❌ Error in getTasks:', getError);
+                        sendResponse({ success: false, error: getError.message });
+                    }
                     break;
 
                 case 'updateTask':
-                    await this.updateTask(message.task);
-                    sendResponse({ success: true });
+                    try {
+                        await this.updateTask(message.task);
+                        sendResponse({ success: true });
+                    } catch (updateError) {
+                        console.error('❌ Error in updateTask:', updateError);
+                        sendResponse({ success: false, error: updateError.message });
+                    }
                     break;
 
                 case 'deleteTask':
-                    await this.deleteTask(message.taskId);
-                    sendResponse({ success: true });
+                    try {
+                        await this.deleteTask(message.taskId);
+                        sendResponse({ success: true });
+                    } catch (deleteError) {
+                        console.error('❌ Error in deleteTask:', deleteError);
+                        sendResponse({ success: false, error: deleteError.message });
+                    }
                     break;
 
                 case 'clearAllTasks':
-                    await this.clearAllTasks();
-                    sendResponse({ success: true });
+                    try {
+                        await this.clearAllTasks();
+                        sendResponse({ success: true });
+                    } catch (clearError) {
+                        console.error('❌ Error in clearAllTasks:', clearError);
+                        sendResponse({ success: false, error: clearError.message });
+                    }
                     break;
                 case 'showTaskNotification':
-                    await this.showTaskNotification(message.task);
-                    sendResponse({ success: true });
+                    try {
+                        await this.showTaskNotification(message.task);
+                        sendResponse({ success: true });
+                    } catch (notificationError) {
+                        console.error('❌ Error in showTaskNotification:', notificationError);
+                        sendResponse({ success: false, error: notificationError.message });
+                    }
                     break;
                 case 'closeTaskNotification':
-                    await this.closeTaskNotification(message.notificationId);
-                    sendResponse({ success: true });
+                    try {
+                        await this.closeTaskNotification(message.notificationId);
+                        sendResponse({ success: true });
+                    } catch (closeError) {
+                        console.error('❌ Error in closeTaskNotification:', closeError);
+                        sendResponse({ success: false, error: closeError.message });
+                    }
                     break;
                 case 'testSimpleNotification':
-                    await this.testSimpleNotification();
-                    sendResponse({ success: true });
+                    try {
+                        await this.testSimpleNotification();
+                        sendResponse({ success: true });
+                    } catch (testError) {
+                        console.error('❌ Error in testSimpleNotification:', testError);
+                        sendResponse({ success: false, error: testError.message });
+                    }
                     break;
                 case 'checkNotificationPermissions':
-                    const permissionStatus = await this.checkNotificationPermissions();
-                    sendResponse({ success: true, data: permissionStatus });
+                    try {
+                        const permissionStatus = await this.checkNotificationPermissions();
+                        sendResponse({ success: true, data: permissionStatus });
+                    } catch (permissionError) {
+                        console.error('❌ Error in checkNotificationPermissions:', permissionError);
+                        sendResponse({ success: false, error: permissionError.message });
+                    }
                     break;
                 case 'testConnection':
-                    console.log('✅ Test connection received successfully');
-                    console.log('📤 Sending success response...');
-                    const testResponse = { success: true, message: 'Background script connected' };
-                    console.log('📤 Response object:', testResponse);
-                    sendResponse(testResponse);
-                    console.log('✅ Response sent');
+                    try {
+                        console.log('✅ Test connection received successfully');
+                        console.log('📤 Sending success response...');
+                        const testResponse = { success: true, message: 'Background script connected' };
+                        console.log('📤 Response object:', testResponse);
+                        sendResponse(testResponse);
+                        console.log('✅ Response sent');
+                    } catch (testError) {
+                        console.error('❌ Error in testConnection:', testError);
+                        sendResponse({ success: false, error: testError.message });
+                    }
                     break;
                 case 'stopNotificationSound':
-                    await this.stopNotificationSoundForTask(message.taskId);
-                    sendResponse({ success: true });
+                    try {
+                        await this.stopNotificationSoundForTask(message.taskId);
+                        sendResponse({ success: true });
+                    } catch (stopError) {
+                        console.error('❌ Error in stopNotificationSound:', stopError);
+                        sendResponse({ success: false, error: stopError.message });
+                    }
                     break;
                 case 'getActiveRingingTasks':
-                    sendResponse({ success: true, data: Array.from(this.activeRingingTasks) });
+                    try {
+                        sendResponse({ success: true, data: Array.from(this.activeRingingTasks) });
+                    } catch (getError) {
+                        console.error('❌ Error in getActiveRingingTasks:', getError);
+                        sendResponse({ success: false, error: getError.message });
+                    }
                     break;
 
                 default:

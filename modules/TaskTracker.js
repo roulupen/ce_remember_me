@@ -34,39 +34,71 @@ class TaskTracker {
     }
 
     setupEventListeners() {
-        // Tab switching
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                this.switchTab(e.target.closest('.tab-btn').dataset.tab);
-            });
-        });
+        console.log('[TaskTracker] Setting up event listeners...');
 
         // Task management
-        document.getElementById('add-task-btn')?.addEventListener('click', () => {
-            this.openTaskModal();
-        });
+        const addTaskBtn = document.getElementById('add-task-btn');
+        if (addTaskBtn) {
+            console.log('[TaskTracker] Add task button found, attaching listener');
+            addTaskBtn.addEventListener('click', () => {
+                console.log('[TaskTracker] Add task button clicked');
+                this.openTaskModal();
+            });
+        } else {
+            console.error('[TaskTracker] Add task button not found!');
+        }
 
-        document.getElementById('save-task')?.addEventListener('click', () => {
-            this.saveTask();
-        });
+        const saveTaskBtn = document.getElementById('save-task');
+        if (saveTaskBtn) {
+            console.log('[TaskTracker] Save task button found, attaching listener');
+            saveTaskBtn.addEventListener('click', () => {
+                console.log('[TaskTracker] Save task button clicked');
+                this.saveTask();
+            });
+        } else {
+            console.error('[TaskTracker] Save task button not found!');
+        }
 
-        document.getElementById('cancel-task')?.addEventListener('click', () => {
-            this.closeTaskModal();
-        });
+        const cancelTaskBtn = document.getElementById('cancel-task');
+        if (cancelTaskBtn) {
+            console.log('[TaskTracker] Cancel task button found, attaching listener');
+            cancelTaskBtn.addEventListener('click', () => {
+                console.log('[TaskTracker] Cancel task button clicked');
+                this.closeTaskModal();
+            });
+        } else {
+            console.error('[TaskTracker] Cancel task button not found!');
+        }
 
-        document.getElementById('close-task-modal')?.addEventListener('click', () => {
-            this.closeTaskModal();
-        });
+        const closeModalBtn = document.getElementById('close-task-modal');
+        if (closeModalBtn) {
+            console.log('[TaskTracker] Close modal button found, attaching listener');
+            closeModalBtn.addEventListener('click', () => {
+                console.log('[TaskTracker] Close modal button clicked');
+                this.closeTaskModal();
+            });
+        } else {
+            console.error('[TaskTracker] Close modal button not found!');
+        }
 
         // Setup drag and drop for all task columns
         this.setupDragAndDrop();
 
         // Close modal when clicking outside
-        document.getElementById('task-modal')?.addEventListener('click', (e) => {
-            if (e.target.id === 'task-modal') {
-                this.closeTaskModal();
-            }
-        });
+        const taskModal = document.getElementById('task-modal');
+        if (taskModal) {
+            console.log('[TaskTracker] Task modal found, attaching outside click listener');
+            taskModal.addEventListener('click', (e) => {
+                if (e.target.id === 'task-modal') {
+                    console.log('[TaskTracker] Modal outside area clicked, closing modal');
+                    this.closeTaskModal();
+                }
+            });
+        } else {
+            console.error('[TaskTracker] Task modal not found!');
+        }
+
+        console.log('[TaskTracker] Event listeners setup complete');
     }
 
     setupDateHeaders() {
@@ -139,33 +171,7 @@ class TaskTracker {
         }
     }
 
-    switchTab(tabId) {
-        console.log('[TaskTracker] Switching to tab:', tabId);
-        
-        // Update tab buttons
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        document.querySelector(`[data-tab="${tabId}"]`)?.classList.add('active');
 
-        // Update tab content
-        document.querySelectorAll('.tab-content').forEach(content => {
-            content.classList.remove('active');
-        });
-        document.getElementById(tabId)?.classList.add('active');
-
-        // Render appropriate content based on tab
-        if (tabId === 'tasks-tab') {
-            console.log('[TaskTracker] Rendering tasks for tasks tab');
-            this.renderTasks();
-        } else if (tabId === 'notes-tab') {
-            console.log('[TaskTracker] Switched to notes tab, ensuring notes are rendered');
-            // Ensure notes are rendered when switching to notes tab
-            if (window.stickyNotes && window.stickyNotes.stickyNotes) {
-                window.stickyNotes.renderFloatingNotes(true); // Force render when switching tabs
-            }
-        }
-    }
 
     // Load tasks data without rendering
     async loadTasksData() {
@@ -492,14 +498,41 @@ class TaskTracker {
 
     // Task CRUD operations
     openTaskModal(task = null) {
+        console.log('[TaskTracker] Opening task modal, task:', task ? task.title : 'new task');
         this.currentEditingTask = task;
+        
         const modal = document.getElementById('task-modal');
+        if (!modal) {
+            console.error('[TaskTracker] Task modal not found!');
+            this.util.showError('Task modal not found. Please refresh the page.');
+            return;
+        }
+        
         const titleEl = modal.querySelector('#task-modal-title');
         const titleInput = modal.querySelector('#task-title');
         const descInput = modal.querySelector('#task-description');
         const prioritySelect = modal.querySelector('#task-priority');
         const dateSelect = modal.querySelector('#task-date');
         const reminderInput = modal.querySelector('#task-reminder');
+
+        // Verify all required elements exist
+        const requiredElements = {
+            titleEl: titleEl,
+            titleInput: titleInput,
+            descInput: descInput,
+            prioritySelect: prioritySelect,
+            dateSelect: dateSelect,
+            reminderInput: reminderInput
+        };
+
+        const missingElements = Object.keys(requiredElements).filter(key => !requiredElements[key]);
+        if (missingElements.length > 0) {
+            console.error('[TaskTracker] Missing modal elements:', missingElements);
+            this.util.showError(`Task modal is missing elements: ${missingElements.join(', ')}. Please refresh the page.`);
+            return;
+        }
+
+        console.log('[TaskTracker] All modal elements found, populating form...');
 
         if (task) {
             console.log('📝 Editing task:', task);
@@ -552,8 +585,21 @@ class TaskTracker {
             reminderInput.value = '';
         }
 
+        console.log('[TaskTracker] Adding active class to modal and focusing title input...');
         modal.classList.add('active');
         titleInput.focus();
+        
+        // Verify modal is now visible
+        setTimeout(() => {
+            const isVisible = modal.classList.contains('active');
+            console.log('[TaskTracker] Modal visibility after opening:', isVisible);
+            if (!isVisible) {
+                console.error('[TaskTracker] Modal failed to become visible!');
+                this.util.showError('Failed to open task modal. Please try again.');
+            } else {
+                console.log('[TaskTracker] ✅ Task modal opened successfully');
+            }
+        }, 100);
     }
 
     closeTaskModal() {
@@ -563,11 +609,20 @@ class TaskTracker {
     }
 
     async saveTask() {
+        console.log('[TaskTracker] Save task called');
+        
         const titleInput = document.getElementById('task-title');
         const descInput = document.getElementById('task-description');
         const prioritySelect = document.getElementById('task-priority');
         const dateSelect = document.getElementById('task-date');
         const reminderInput = document.getElementById('task-reminder');
+
+        // Verify all elements exist
+        if (!titleInput || !descInput || !prioritySelect || !dateSelect || !reminderInput) {
+            console.error('[TaskTracker] One or more form elements not found');
+            this.util.showError('Form elements missing. Please refresh the page.');
+            return;
+        }
 
         const title = titleInput.value.trim();
         const description = descInput.value.trim();
@@ -575,7 +630,16 @@ class TaskTracker {
         const dateCategory = dateSelect.value;
         const reminder = reminderInput.value ? new Date(reminderInput.value).getTime() : null;
 
+        console.log('[TaskTracker] Form data collected:', {
+            title: title,
+            description: description,
+            priority: priority,
+            dateCategory: dateCategory,
+            reminder: reminder
+        });
+
         if (!title) {
+            console.warn('[TaskTracker] Title is required but missing');
             this.util.showError('Please enter a task title');
             titleInput.focus();
             return;
@@ -603,36 +667,53 @@ class TaskTracker {
         }
 
         try {
+            console.log('[TaskTracker] Sending task to background script...');
             const response = await this.util.sendMessageToBackground({ 
                 action: 'saveTask', 
                 task: task 
             });
             
-            if (response.success) {
+            console.log('[TaskTracker] Background response:', response);
+            console.log('[TaskTracker] Response type:', typeof response);
+            console.log('[TaskTracker] Response success property:', response?.success);
+            console.log('[TaskTracker] Response success type:', typeof response?.success);
+            
+            if (response && response.success === true) {
+                console.log('[TaskTracker] Task saved successfully to background');
+                
                 // Update local array
                 if (this.currentEditingTask) {
+                    console.log('[TaskTracker] Updating existing task in local array');
                     const index = this.tasks.findIndex(t => t.id === task.id);
                     if (index !== -1) {
                         this.tasks[index] = task;
+                        console.log('[TaskTracker] Task updated in local array at index', index);
                     }
                 } else {
+                    console.log('[TaskTracker] Adding new task to local array');
                     this.tasks.push(task);
+                    console.log('[TaskTracker] Task added to local array, new length:', this.tasks.length);
                 }
 
                 // Setup reminder if specified
                 if (task.reminder) {
+                    console.log('[TaskTracker] Setting up reminder for task');
                     this.setupTaskReminder(task);
                 }
 
+                console.log('[TaskTracker] Rendering tasks and closing modal...');
                 this.renderTasks();
                 this.closeTaskModal();
                 this.util.showSuccess(this.currentEditingTask ? 'Task updated' : 'Task created');
+                console.log('[TaskTracker] ✅ Task save process completed successfully');
             } else {
-                throw new Error(response.error || 'Failed to save task');
+                console.error('[TaskTracker] Task save failed. Full response:', JSON.stringify(response, null, 2));
+                const errorMsg = response?.error || `Failed to save task. Response: ${JSON.stringify(response)}`;
+                throw new Error(errorMsg);
             }
         } catch (error) {
-            console.error('Error saving task:', error);
-            this.util.showError('Failed to save task');
+            console.error('[TaskTracker] ❌ Error saving task:', error);
+            this.util.showError('Failed to save task: ' + error.message);
         }
     }
 
@@ -804,7 +885,12 @@ class TaskTracker {
                 notification.onclick = () => {
                     console.log('🔔 Fallback notification clicked');
                     window.focus();
-                    this.switchTab('tasks-tab');
+                    // Use global switchToTab function since TaskTracker no longer handles tab switching
+                    if (window.switchToTab) {
+                        window.switchToTab('tasks-tab');
+                    } else if (window.productivityApp) {
+                        window.productivityApp.switchTab('tasks-tab');
+                    }
                     notification.close();
                 };
 
@@ -1029,7 +1115,12 @@ class TaskTracker {
         
         // Switch to tasks tab if not already there
         if (!this.isTasksTabActive()) {
-            this.switchTab('tasks-tab');
+            // Use global switchToTab function since TaskTracker no longer handles tab switching
+            if (window.switchToTab) {
+                window.switchToTab('tasks-tab');
+            } else if (window.productivityApp) {
+                window.productivityApp.switchTab('tasks-tab');
+            }
         }
     }
 
@@ -1242,6 +1333,161 @@ class TaskTracker {
             } catch (error) {
                 console.error('❌ Error snoozing task:', error);
             }
+        }
+    }
+
+    // Debug functions for testing
+    testAddTaskButton() {
+        console.log('🧪 Testing add task button...');
+        const btn = document.getElementById('add-task-btn');
+        if (btn) {
+            console.log('✅ Add task button found');
+            console.log('🔍 Button properties:', {
+                id: btn.id,
+                className: btn.className,
+                style: btn.style.cssText,
+                onclick: btn.onclick,
+                eventListeners: 'Event listeners cannot be inspected directly'
+            });
+            
+            // Simulate click
+            console.log('🖱️ Simulating button click...');
+            btn.click();
+        } else {
+            console.error('❌ Add task button not found!');
+        }
+    }
+
+    testTaskModal() {
+        console.log('🧪 Testing task modal...');
+        const modal = document.getElementById('task-modal');
+        if (modal) {
+            console.log('✅ Task modal found');
+            console.log('🔍 Modal properties:', {
+                id: modal.id,
+                className: modal.className,
+                style: modal.style.cssText,
+                children: modal.children.length
+            });
+            
+            // Test direct modal opening
+            console.log('🚀 Testing direct modal opening...');
+            this.openTaskModal();
+        } else {
+            console.error('❌ Task modal not found!');
+        }
+    }
+
+    debugTaskTracker() {
+        console.log('🔍 TaskTracker Debug Information:');
+        console.log('📋 Tasks loaded:', this.tasks.length);
+        console.log('🎯 Current editing task:', this.currentEditingTask);
+        console.log('🔧 Util instance:', this.util ? '✅' : '❌');
+        
+        console.log('\n📍 DOM Elements Check:');
+        const elements = [
+            'add-task-btn',
+            'task-modal',
+            'task-title',
+            'task-description',
+            'task-priority',
+            'task-date', 
+            'task-reminder',
+            'save-task',
+            'cancel-task',
+            'close-task-modal'
+        ];
+        
+        elements.forEach(id => {
+            const el = document.getElementById(id);
+            console.log(`${id}: ${el ? '✅' : '❌'}`);
+        });
+
+        console.log('\n🎯 TaskTracker instance methods:');
+        const methods = Object.getOwnPropertyNames(Object.getPrototypeOf(this));
+        console.log(methods.join(', '));
+
+        return {
+            tasksCount: this.tasks.length,
+            elementsFound: elements.filter(id => document.getElementById(id)).length,
+            totalElements: elements.length
+        };
+    }
+
+    async testBackgroundCommunication() {
+        console.log('🧪 Testing background communication...');
+        
+        try {
+            const testTask = {
+                id: 'test-' + Date.now(),
+                title: 'Test Task Communication',
+                description: 'Testing background script communication',
+                priority: 'medium',
+                dateCategory: 'today',
+                reminder: null,
+                completed: false,
+                createdAt: Date.now(),
+                updatedAt: Date.now()
+            };
+            
+            console.log('📤 Sending test task to background:', testTask);
+            
+            const response = await this.util.sendMessageToBackground({ 
+                action: 'saveTask', 
+                task: testTask 
+            });
+            
+            console.log('📥 Received response from background:', response);
+            console.log('📥 Response properties:', Object.keys(response || {}));
+            console.log('📥 Success property:', response?.success);
+            console.log('📥 Error property:', response?.error);
+            
+            if (response && response.success === true) {
+                console.log('✅ Background communication test PASSED');
+                this.util.showSuccess('Background communication test passed!');
+                return true;
+            } else {
+                console.error('❌ Background communication test FAILED');
+                console.error('❌ Full response:', JSON.stringify(response, null, 2));
+                this.util.showError('Background communication test failed. Check console for details.');
+                return false;
+            }
+            
+        } catch (error) {
+            console.error('❌ Background communication test ERROR:', error);
+            this.util.showError('Background communication error: ' + error.message);
+            return false;
+        }
+    }
+
+    async testMessageRouting() {
+        console.log('🧪 Testing message routing between frontend and background...');
+        
+        try {
+            // Test 1: Background script message (should have success property)
+            console.log('📤 Test 1: Sending message to background script...');
+            const bgResponse = await this.util.sendMessageToBackground({ action: 'testConnection' });
+            console.log('📥 Background response:', bgResponse);
+            
+            // Test 2: Frontend message listener (should be ignored for background messages)
+            console.log('📤 Test 2: Testing message listener separation...');
+            
+            if (bgResponse && bgResponse.success === true) {
+                console.log('✅ Message routing test PASSED');
+                console.log('✅ Background script communication working correctly');
+                this.util.showSuccess('Message routing test passed!');
+                return true;
+            } else {
+                console.error('❌ Message routing test FAILED');
+                console.error('❌ Expected success:true, got:', bgResponse);
+                this.util.showError('Message routing test failed. Check console for details.');
+                return false;
+            }
+            
+        } catch (error) {
+            console.error('❌ Message routing test ERROR:', error);
+            this.util.showError('Message routing error: ' + error.message);
+            return false;
         }
     }
 }

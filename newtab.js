@@ -196,31 +196,53 @@ class ProductivityApp {
     }
 
     setupMessageListeners() {
-        // Listen for messages from background script
+        // Listen for messages from background script TO frontend
         chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-            console.log('📨 Received message:', message);
+            // Only handle messages that are meant for the frontend (have a 'type' property)
+            // Messages with 'action' property are meant for the background script
+            if (message.action) {
+                console.log('📨 Ignoring message meant for background script:', message.action);
+                return; // Don't handle or respond - let background script handle it
+            }
+            
+            if (!message.type) {
+                console.log('📨 Ignoring message without type or action:', message);
+                return; // Don't handle unknown message format
+            }
+            
+            console.log('📨 Frontend received message:', message);
+            
+            let handled = false;
             
             switch (message.type) {
                 case 'startNotificationSound':
                     this.handleStartNotificationSound(message);
+                    handled = true;
                     break;
                 case 'stopNotificationSound':
                     this.handleStopNotificationSound(message);
+                    handled = true;
                     break;
                 case 'taskUpdated':
                     this.handleTaskUpdated(message.task);
+                    handled = true;
                     break;
                 case 'taskRingingStarted':
                     this.handleTaskRingingStarted(message);
+                    handled = true;
                     break;
                 case 'taskRingingStopped':
                     this.handleTaskRingingStopped(message);
+                    handled = true;
                     break;
                 default:
-                    console.log('Unknown message type:', message.type);
+                    console.log('📨 Unknown message type for frontend:', message.type);
             }
             
-            sendResponse({ received: true });
+            // Only send response if we actually handled the message
+            if (handled) {
+                sendResponse({ received: true });
+            }
         });
     }
 
@@ -593,6 +615,113 @@ document.addEventListener('DOMContentLoaded', () => {
     window.refreshSidebar = () => {
         if (window.bookmarks) {
             window.bookmarks.refreshSidebarAfterTabChange();
+        }
+    };
+    
+    // Expose TaskTracker debug functions for testing
+    window.debugTaskTracker = () => {
+        if (window.taskTracker) {
+            return window.taskTracker.debugTaskTracker();
+        } else {
+            console.error('TaskTracker not available');
+        }
+    };
+    
+    window.testAddTaskButton = () => {
+        if (window.taskTracker) {
+            window.taskTracker.testAddTaskButton();
+        } else {
+            console.error('TaskTracker not available');
+        }
+    };
+    
+    window.testTaskModal = () => {
+        if (window.taskTracker) {
+            window.taskTracker.testTaskModal();
+        } else {
+            console.error('TaskTracker not available');
+        }
+    };
+    
+    window.testBackgroundCommunication = async () => {
+        if (window.taskTracker) {
+            return await window.taskTracker.testBackgroundCommunication();
+        } else {
+            console.error('TaskTracker not available');
+            return false;
+        }
+    };
+    
+    window.testMessageRouting = async () => {
+        if (window.taskTracker) {
+            return await window.taskTracker.testMessageRouting();
+        } else {
+            console.error('TaskTracker not available');
+            return false;
+        }
+    };
+    
+    // Test cross-module compatibility
+    window.testAllModules = async () => {
+        console.log('🧪 Testing all modules compatibility...');
+        
+        const results = {
+            taskTracker: false,
+            stickyNotes: false,
+            bookmarks: false,
+            tabSwitching: false,
+            messageRouting: false
+        };
+        
+        try {
+            // Test TaskTracker
+            if (window.taskTracker) {
+                console.log('📋 Testing TaskTracker...');
+                results.taskTracker = await window.taskTracker.testBackgroundCommunication();
+            }
+            
+            // Test StickyNotes background communication
+            if (window.stickyNotes && window.stickyNotes.util) {
+                console.log('📝 Testing StickyNotes...');
+                const response = await window.stickyNotes.util.sendMessageToBackground({ action: 'getNotes' });
+                results.stickyNotes = response && response.success === true;
+                console.log('📝 StickyNotes test result:', results.stickyNotes);
+            }
+            
+            // Test Bookmarks
+            if (window.bookmarks) {
+                console.log('🔖 Testing Bookmarks...');
+                results.bookmarks = Array.isArray(window.bookmarks.bookmarkGroups);
+                console.log('🔖 Bookmarks test result:', results.bookmarks);
+            }
+            
+            // Test Tab Switching
+            console.log('📑 Testing tab switching...');
+            const currentTab = document.querySelector('.tab-content.active')?.id;
+            results.tabSwitching = !!currentTab;
+            console.log('📑 Current active tab:', currentTab);
+            
+            // Test Message Routing
+            if (window.taskTracker) {
+                console.log('📨 Testing message routing...');
+                results.messageRouting = await window.taskTracker.testMessageRouting();
+            }
+            
+            console.log('🧪 All modules test results:', results);
+            
+            const allPassed = Object.values(results).every(result => result === true);
+            if (allPassed) {
+                console.log('✅ All modules are working correctly!');
+            } else {
+                console.warn('⚠️ Some modules may have issues:', 
+                    Object.entries(results).filter(([_, passed]) => !passed).map(([module, _]) => module));
+            }
+            
+            return results;
+            
+        } catch (error) {
+            console.error('❌ Error testing modules:', error);
+            return results;
         }
     };
     
