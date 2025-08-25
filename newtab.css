@@ -243,11 +243,66 @@ body.dark-theme .sidebar-tab-item {
     color: var(--text-primary);
 }
 
+/* Ensure task items have white text in dark theme */
+body.dark-theme .task-item {
+    color: white !important;
+}
+
+body.dark-theme .task-item .task-title {
+    color: white !important;
+}
+
+body.dark-theme .task-item .task-description {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+body.dark-theme .task-item .task-reminder {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Dark theme completed tasks styling */
+body.dark-theme .task-item.completed {
+    background: rgba(40, 44, 80, 0.6) !important;
+    color: rgba(255, 255, 255, 0.6) !important;
+}
+
+body.dark-theme .task-item.completed .task-title {
+    color: rgba(255, 255, 255, 0.6) !important;
+    text-decoration: line-through;
+}
+
+body.dark-theme .task-item.completed .task-description {
+    color: rgba(255, 255, 255, 0.4) !important;
+}
+
+body.dark-theme .task-item.completed .task-reminder {
+    color: rgba(255, 255, 255, 0.5) !important;
+}
+
 body.dark-theme .task-item:hover,
 body.dark-theme .clean-bookmark-item:hover,
 body.dark-theme .sidebar-tab-item:hover {
     background: var(--bg-tertiary);
     border-color: var(--border-secondary);
+}
+
+/* Enhanced dark theme task hover states */
+body.dark-theme .task-item:hover {
+    background: rgba(60, 66, 120, 0.8) !important;
+    color: white !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+body.dark-theme .task-item:hover .task-title {
+    color: white !important;
+}
+
+body.dark-theme .task-item:hover .task-description {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+body.dark-theme .task-item:hover .task-reminder {
+    color: rgba(255, 255, 255, 0.95) !important;
 }
 
 /* Theme-aware group headers */
@@ -731,6 +786,62 @@ body.light-theme .context-menu-divider {
 body.dark-theme .task-column {
     background: var(--bg-secondary);
     border-color: var(--border-primary);
+}
+
+/* Dark theme task action buttons */
+body.dark-theme .task-action-btn {
+    color: white !important;
+    font-weight: bold;
+}
+
+body.dark-theme .task-complete-btn {
+    background: #27ae60 !important;
+    color: white !important;
+}
+
+body.dark-theme .task-complete-btn:hover {
+    background: #229954 !important;
+}
+
+body.dark-theme .task-complete-btn.completed {
+    background: #95a5a6 !important;
+    color: white !important;
+}
+
+body.dark-theme .task-edit-btn {
+    background: #3498db !important;
+    color: white !important;
+}
+
+body.dark-theme .task-edit-btn:hover {
+    background: #2980b9 !important;
+}
+
+body.dark-theme .task-delete-btn {
+    background: #e74c3c !important;
+    color: white !important;
+}
+
+body.dark-theme .task-delete-btn:hover {
+    background: #c0392b !important;
+}
+
+/* Dark theme task priority indicators - ensure they're visible */
+body.dark-theme .task-item.priority-low {
+    border-left-color: #95a5a6 !important;
+}
+
+body.dark-theme .task-item.priority-medium {
+    border-left-color: #f39c12 !important;
+}
+
+body.dark-theme .task-item.priority-high {
+    border-left-color: #e74c3c !important;
+}
+
+body.dark-theme .task-item.priority-urgent {
+    border-left-color: #9b59b6 !important;
+    background: linear-gradient(135deg, rgba(155, 89, 182, 0.15), rgba(142, 68, 173, 0.15)) !important;
 }
 
 body.dark-theme .task-column.today-column {
