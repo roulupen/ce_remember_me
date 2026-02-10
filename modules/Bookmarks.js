@@ -12,6 +12,7 @@ class Bookmarks {
         this.draggedTab = null;
         this.draggedFromGroup = null; // Track source group for reordering
         this.dropIndicator = null; // Visual indicator for drop position
+        this.dropIndicatorGroup = null; // Visual indicator for group reordering
         this.isRenderingSidebar = false; // Prevent concurrent renders
         this.lastToggleTime = 0; // Prevent rapid toggle spam
         this.eventListenerSetupCount = 0; // Track setup calls
@@ -716,6 +717,11 @@ class Bookmarks {
         return `
             <div class="clean-bookmark-group" data-group-id="${group.id}" style="border-top: 3px solid ${group.color}">
                 <div class="clean-group-header">
+                    <div class="group-drag-handle" draggable="true" title="Drag to reorder groups">
+                        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M2 4h12v1H2V4zm0 3h12v1H2V7zm0 3h12v1H2v-1z"/>
+                        </svg>
+                    </div>
                     <div class="group-content">
                         <div class="group-display-mode">
                             <div class="group-title-display" title="${this.escapeHtml(group.name)}">${this.escapeHtml(group.name)}</div>
@@ -1686,11 +1692,36 @@ class Bookmarks {
     }
 
     // Drag and drop functionality
+    handleGroupDragStart(groupElement, e) {
+        console.log('[Bookmarks] === GROUP DRAG START ===');
+
+        this.draggedGroup = groupElement.dataset.groupId;
+        this.draggedBookmark = null;
+        this.draggedTab = null;
+        this.draggedFromGroup = null;
+
+        groupElement.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+
+        console.log('[Bookmarks] Dragging group:', this.draggedGroup);
+    }
+
     handleDragStart(e) {
         console.log('[Bookmarks] === DRAG START ===');
+
+        // Check for group drag handle first
+        const groupDragHandle = e.target.closest('.group-drag-handle');
+        if (groupDragHandle) {
+            const groupElement = groupDragHandle.closest('.clean-bookmark-group');
+            if (groupElement) {
+                this.handleGroupDragStart(groupElement, e);
+                return; // Exit early - this is a group drag
+            }
+        }
+
         const bookmarkItem = e.target.closest('.clean-bookmark-item');
         const tabItem = e.target.closest('.sidebar-tab-item');
-        
+
         if (bookmarkItem) {
             this.draggedBookmark = bookmarkItem.dataset.bookmarkId;
             this.draggedTab = null;
@@ -1725,9 +1756,22 @@ class Bookmarks {
 
     handleDragOver(e) {
         e.preventDefault();
+
+        // Handle group dragging
+        if (this.draggedGroup) {
+            const targetGroup = e.target.closest('.clean-bookmark-group');
+            if (targetGroup && targetGroup.dataset.groupId !== this.draggedGroup) {
+                e.dataTransfer.dropEffect = 'move';
+                this.showGroupDropIndicator(e, targetGroup);
+            } else {
+                this.hideGroupDropIndicator();
+            }
+            return; // Exit early - this is a group drag
+        }
+
         const groupContent = e.target.closest('.clean-bookmarks-list');
         const bookmarkItem = e.target.closest('.clean-bookmark-item');
-        
+
         if (groupContent && (this.draggedBookmark || this.draggedTab)) {
             e.dataTransfer.dropEffect = this.draggedBookmark ? 'move' : 'copy';
             groupContent.classList.add('drag-over');
@@ -1753,10 +1797,20 @@ class Bookmarks {
     handleDrop(e) {
         e.preventDefault();
         console.log('[Bookmarks] === DROP EVENT ===');
-        
+
+        // Handle group drop
+        if (this.draggedGroup) {
+            const targetGroup = e.target.closest('.clean-bookmark-group');
+            if (targetGroup && targetGroup.dataset.groupId !== this.draggedGroup) {
+                this.reorderGroup(this.draggedGroup, targetGroup, e);
+            }
+            this.hideGroupDropIndicator();
+            return; // Exit early - this is a group drag
+        }
+
         const groupContent = e.target.closest('.clean-bookmarks-list');
         const bookmarkItem = e.target.closest('.clean-bookmark-item');
-        
+
         if (groupContent) {
             const targetGroupId = groupContent.dataset.groupId;
             console.log('[Bookmarks] Drop target group:', targetGroupId);
@@ -1793,22 +1847,33 @@ class Bookmarks {
     }
 
     handleDragEnd(e) {
+        // Handle group drag end
+        const groupElement = e.target.closest('.clean-bookmark-group');
+        if (groupElement) {
+            groupElement.classList.remove('dragging');
+        }
+
         const bookmarkItem = e.target.closest('.clean-bookmark-item');
         const tabItem = e.target.closest('.sidebar-tab-item');
-        
+
         if (bookmarkItem) {
             bookmarkItem.classList.remove('dragging');
         }
-        
+
         if (tabItem) {
             tabItem.classList.remove('dragging');
         }
-        
+
         // Remove all drag-over classes
         document.querySelectorAll('.drag-over').forEach(el => {
             el.classList.remove('drag-over');
         });
-        
+
+        // Clear group drag state and hide group indicator
+        this.draggedGroup = null;
+        this.hideGroupDropIndicator();
+
+        // Clear bookmark drag state
         this.draggedBookmark = null;
         this.draggedTab = null;
         this.draggedFromGroup = null;
@@ -1858,7 +1923,52 @@ class Bookmarks {
             this.dropIndicator = null;
         }
     }
-    
+
+    showGroupDropIndicator(e, targetGroupElement) {
+        this.hideGroupDropIndicator(); // Remove any existing indicator
+
+        const rect = targetGroupElement.getBoundingClientRect();
+        const mouseX = e.clientX;
+        const itemCenterX = rect.left + rect.width / 2;
+
+        // Determine if we should insert before or after the target group
+        const insertBefore = mouseX < itemCenterX;
+
+        // Create drop indicator
+        this.dropIndicatorGroup = document.createElement('div');
+        this.dropIndicatorGroup.className = 'group-drop-indicator';
+        this.dropIndicatorGroup.style.cssText = `
+            position: absolute;
+            top: 8px;
+            bottom: 8px;
+            width: 3px;
+            background: linear-gradient(180deg, transparent, #3498db, transparent);
+            border-radius: 2px;
+            z-index: 1000;
+            pointer-events: none;
+            box-shadow: 0 0 6px rgba(52, 152, 219, 0.6);
+        `;
+
+        const container = targetGroupElement.parentElement;
+        container.style.position = 'relative';
+
+        // Position the indicator
+        if (insertBefore) {
+            this.dropIndicatorGroup.style.left = (rect.left - container.getBoundingClientRect().left - 2) + 'px';
+        } else {
+            this.dropIndicatorGroup.style.left = (rect.right - container.getBoundingClientRect().left + 2) + 'px';
+        }
+
+        container.appendChild(this.dropIndicatorGroup);
+    }
+
+    hideGroupDropIndicator() {
+        if (this.dropIndicatorGroup && this.dropIndicatorGroup.parentNode) {
+            this.dropIndicatorGroup.parentNode.removeChild(this.dropIndicatorGroup);
+            this.dropIndicatorGroup = null;
+        }
+    }
+
     // Bookmark reordering within the same group
     reorderBookmark(draggedBookmarkId, targetBookmarkItem, groupContent, e) {
         console.log('[Bookmarks] === REORDER BOOKMARK ===');
@@ -1951,7 +2061,77 @@ class Bookmarks {
         // Show success feedback
         this.showTemporaryMessage(`Bookmark "${draggedBookmark.title}" reordered`, 'success');
     }
-    
+
+    // Group reordering
+    reorderGroup(draggedGroupId, targetGroupElement, e) {
+        console.log('[Bookmarks] === REORDER GROUP ===');
+
+        const targetGroupId = targetGroupElement.dataset.groupId;
+
+        if (draggedGroupId === targetGroupId) {
+            console.log('[Bookmarks] Dropping on self, no reorder needed');
+            return;
+        }
+
+        // Find indices
+        const draggedIndex = this.bookmarkGroups.findIndex(g => g.id === draggedGroupId);
+        const targetIndex = this.bookmarkGroups.findIndex(g => g.id === targetGroupId);
+
+        if (draggedIndex === -1 || targetIndex === -1) {
+            console.error('[Bookmarks] Group not found for reordering');
+            return;
+        }
+
+        // Determine insertion position based on mouse position
+        const rect = targetGroupElement.getBoundingClientRect();
+        const mouseX = e.clientX;
+        const itemCenterX = rect.left + rect.width / 2;
+        const insertBefore = mouseX < itemCenterX;
+
+        // Calculate new index
+        let newIndex = insertBefore ? targetIndex : targetIndex + 1;
+
+        // Adjust index if dragged item is before the target
+        if (draggedIndex < targetIndex && !insertBefore) {
+            newIndex = targetIndex;
+        } else if (draggedIndex < targetIndex && insertBefore) {
+            newIndex = targetIndex - 1;
+        } else if (draggedIndex > targetIndex && insertBefore) {
+            newIndex = targetIndex;
+        } else if (draggedIndex > targetIndex && !insertBefore) {
+            newIndex = targetIndex + 1;
+        }
+
+        // Don't reorder if position won't change
+        if (newIndex === draggedIndex || newIndex === draggedIndex + 1) {
+            console.log('[Bookmarks] No effective position change, skipping');
+            return;
+        }
+
+        // Perform the reordering using array splice
+        const [draggedGroup] = this.bookmarkGroups.splice(draggedIndex, 1);
+
+        // Adjust newIndex if it's after the removed item
+        if (newIndex > draggedIndex) {
+            newIndex--;
+        }
+
+        this.bookmarkGroups.splice(newIndex, 0, draggedGroup);
+
+        console.log('[Bookmarks] Group reordered successfully:', {
+            groupName: draggedGroup.name,
+            oldPosition: draggedIndex,
+            newPosition: newIndex
+        });
+
+        // Save and re-render
+        this.saveBookmarks();
+        this.renderMainContent();
+
+        // Show success feedback
+        this.showTemporaryMessage(`Group "${draggedGroup.name}" reordered`, 'success');
+    }
+
     // Reorder bookmark to end of group (when dropping on empty area)
     reorderBookmarkToEnd(draggedBookmarkId, targetGroupId) {
         console.log('[Bookmarks] === REORDER TO END ===');

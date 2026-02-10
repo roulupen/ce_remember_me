@@ -66,7 +66,9 @@ A comprehensive productivity extension that transforms your new tab page into a 
 - ✅ **Smart Sidebar** - Displays currently open browser tabs with favicons
 - ✅ **Three Sidebar States** - Hidden, Collapsed (icons only), Expanded (full details)
 - ✅ **Bookmark Groups** - Organize bookmarks into customizable groups (max 10)
+- ✅ **Group Reordering** - Drag and drop to reorder bookmark groups ⭐ *NEW*
 - ✅ **Drag & Drop** - Move tabs from sidebar into bookmark groups
+- ✅ **Bookmark Reordering** - Reorder bookmarks within groups via drag and drop
 - ✅ **Inline Editing** - Edit bookmark and group names directly
 - ✅ **Context Menus** - Right-click for additional options
 - ✅ **Visual Feedback** - Success/error notifications for all operations
@@ -82,17 +84,22 @@ A comprehensive productivity extension that transforms your new tab page into a 
 
 ### Bookmark Management
 - **Group Creation** - Create up to 10 bookmark groups with custom names
+- **Group Reordering** - Drag groups by their handle (≡) to reorder them ⭐ *NEW*
+- **Bookmark Reordering** - Drag bookmarks within groups to reorganize them
 - **Color Coding** - Assign colors to groups for visual organization
 - **Inline Actions** - Edit/delete buttons appear on hover
 - **Batch Operations** - Delete entire groups with confirmation
 - **Smart Validation** - Prevents empty names and duplicate groups
+- **Visual Drop Indicators** - See exactly where items will be placed during drag operations
 
 ### How to Use
 - **Toggle Sidebar** - Click the toggle button to show/hide/collapse sidebar
 - **Create Groups** - Click the "+" button to add new bookmark groups
+- **Reorder Groups** - Drag groups by their handle (≡ icon) to rearrange them ⭐ *NEW*
 - **Drag Tabs** - Drag current tabs from sidebar into bookmark groups
+- **Reorder Bookmarks** - Drag bookmarks within a group to reorganize them
 - **Edit Names** - Click edit button or right-click for edit options
-- **Open Bookmarks** - Click any bookmark to open in new tab
+- **Open Bookmarks** - Click any bookmark to open in the same tab
 - **Organize** - Use different groups for work, personal, research, etc.
 
 ---
@@ -134,7 +141,8 @@ A comprehensive productivity extension that transforms your new tab page into a 
 ### What's Saved
 - ✅ **Current Tab** - Remembers your last active tab (Notes/Tasks/Bookmarks)
 - ✅ **Theme Preference** - Your light/dark theme choice
-- ✅ **Bookmark Groups** - All bookmark data and organization
+- ✅ **Bookmark Groups** - All bookmark data, organization, and group order ⭐ *NEW*
+- ✅ **Bookmark Order** - Position of bookmarks within each group
 - ✅ **Sidebar State** - Collapsed/expanded preference
 - ✅ **Sticky Notes** - Content, position, size, and colors
 - ✅ **Tasks** - All task data, priorities, and completion states
@@ -243,11 +251,17 @@ browser_plugin/
 #### `Bookmarks.js` - Bookmark Organization ⭐ *New*
 - Current browser tabs sidebar with favicon display
 - Bookmark group creation and management (up to 10 groups)
+- Complete drag-and-drop system for groups and bookmarks ⭐ *NEW*
+  - Drag groups by handle to reorder them
+  - Drag bookmarks within groups to reorganize
+  - Visual drop indicators (vertical for groups, horizontal for bookmarks)
+  - Separate drag state management to prevent conflicts
 - Drag and drop from tabs to bookmarks
 - Inline edit/delete functionality for bookmarks and groups
 - Context menus with comprehensive options
 - Three-state sidebar (hidden/collapsed/visible)
 - Smart toggle button with proper positioning
+- Real-time persistence of all changes
 
 #### `background.js` - Service Worker
 - Comprehensive data persistence for all modules
@@ -336,9 +350,11 @@ browser_plugin/
 2. **Toggle sidebar** - Click the border button to show current tabs
 3. **Create groups** - Click "+" to add new bookmark groups (up to 10)
 4. **Drag tabs** - Drag current browser tabs into bookmark groups
-5. **Edit names** - Use inline edit buttons or right-click context menus
-6. **Organize** - Assign colors and names to different groups
-7. **Quick access** - Click any bookmark to open in a new tab
+5. **Reorder groups** - Click and drag the handle icon (≡) on group headers to rearrange ⭐ *NEW*
+6. **Reorder bookmarks** - Drag bookmarks within groups to reorganize them
+7. **Edit names** - Use inline edit buttons or right-click context menus
+8. **Organize** - Assign colors and names to different groups
+9. **Quick access** - Click any bookmark to open in the same tab
 
 ### Advanced Features
 
@@ -359,6 +375,18 @@ browser_plugin/
 - **Hidden Mode** - Complete sidebar hiding (not recommended)
 - **Smart toggle** - Button always accessible at sidebar border
 
+#### Drag-and-Drop Reordering ⭐ *New Feature*
+- **Group Reordering** - Click and drag the handle icon (≡) on any group header to reorder groups
+- **Bookmark Reordering** - Drag bookmarks within a group to reorganize them
+- **Visual Drop Indicators** - See exactly where items will be placed:
+  - Vertical blue line between groups when reordering groups
+  - Horizontal blue line between bookmarks when reordering bookmarks
+- **Smart Drag Detection** - System automatically detects whether you're dragging a group, bookmark, or tab
+- **Smooth Animations** - Groups and bookmarks smoothly animate to their new positions
+- **Instant Persistence** - New order is saved immediately to Chrome storage
+- **No Conflicts** - Group dragging doesn't interfere with bookmark or tab dragging
+- **Theme Support** - Drop indicators adapt to both light and dark themes
+
 ---
 
 ## 🎮 User Interface Guide
@@ -372,7 +400,8 @@ browser_plugin/
 
 #### Hover Actions
 - **Bookmark items** - Hover to reveal edit/delete buttons
-- **Group headers** - Hover to reveal group action buttons
+- **Group headers** - Hover to reveal group action buttons and drag handle
+- **Drag handles** - Handle icon (≡) becomes more visible on hover ⭐ *NEW*
 - **Sidebar icons** - Hover in collapsed mode for tooltips
 
 #### Right-Click Menus
@@ -389,8 +418,10 @@ browser_plugin/
 #### Drag & Drop
 - **Sticky Notes** - Drag by header to reposition
 - **Tasks** - Drag between date columns
+- **Bookmark Groups** - Drag by handle (≡) to reorder groups ⭐ *NEW*
+- **Bookmarks** - Drag bookmarks within groups to reorder them
 - **Tabs to Bookmarks** - Drag from sidebar into bookmark groups
-- **Visual feedback** - Clear indicators during drag operations
+- **Visual feedback** - Clear drop indicators show where items will be placed (vertical line for groups, horizontal line for bookmarks)
 
 ---
 
@@ -520,6 +551,8 @@ Open Chrome DevTools (F12) on the new tab page to:
 - [ ] Organize notes by color and position
 - [ ] Set up task reminders for important deadlines
 - [ ] Create bookmark groups for different projects/topics
+- [ ] Reorder bookmark groups by dragging their handles (≡) ⭐ *NEW*
+- [ ] Reorganize bookmarks within groups by dragging them ⭐ *NEW*
 - [ ] Learn keyboard shortcuts for faster editing
 - [ ] Configure sidebar to your preferred state (collapsed/expanded)
 

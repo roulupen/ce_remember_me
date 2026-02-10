@@ -2809,6 +2809,92 @@ body.light-theme .clean-bookmarks-list.drag-over .clean-bookmark-item:not(.dragg
     transform: translateY(0) scale(0.95);
 }
 
+/* Group Drag Handle */
+.group-drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 6px;
+    margin-right: 8px;
+    cursor: grab;
+    opacity: 0.4;
+    transition: opacity 0.2s ease, background 0.2s ease;
+    border-radius: 4px;
+    flex-shrink: 0;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+.group-drag-handle:hover {
+    opacity: 0.8;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.group-drag-handle:active {
+    cursor: grabbing;
+}
+
+.group-drag-handle svg {
+    pointer-events: none;
+}
+
+/* Group Dragging State */
+.clean-bookmark-group.dragging {
+    opacity: 0.6;
+    transform: rotate(1deg) scale(0.98);
+    z-index: 1000;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    transition: none;
+}
+
+/* Group Drop Indicator */
+.group-drop-indicator {
+    position: absolute;
+    top: 8px;
+    bottom: 8px;
+    width: 3px;
+    background: linear-gradient(180deg, transparent, #3498db, transparent);
+    border-radius: 2px;
+    z-index: 1000;
+    pointer-events: none;
+    box-shadow: 0 0 6px rgba(52, 152, 219, 0.6);
+    animation: pulseGroupIndicator 1s ease-in-out infinite;
+}
+
+@keyframes pulseGroupIndicator {
+    0%, 100% {
+        transform: scaleX(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scaleX(1.5);
+        opacity: 0.8;
+    }
+}
+
+/* Theme-aware Group Drop Indicator */
+body.dark-theme .group-drop-indicator {
+    background: linear-gradient(180deg, transparent, var(--accent-primary), transparent);
+    box-shadow: 0 0 6px rgba(93, 173, 226, 0.6);
+}
+
+body.light-theme .group-drop-indicator {
+    background: linear-gradient(180deg, transparent, var(--accent-primary), transparent);
+    box-shadow: 0 0 6px rgba(52, 152, 219, 0.6);
+}
+
+/* Light Theme Adjustments */
+body.light-theme .group-drag-handle:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+body.light-theme .clean-bookmark-group.dragging {
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
 /* Legacy group title styles (kept for compatibility) */
 .clean-group-title {
     background: transparent;
