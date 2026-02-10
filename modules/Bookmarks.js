@@ -898,25 +898,31 @@ class Bookmarks {
         if (bookmarkItem) {
             const url = bookmarkItem.dataset.url;
             if (url) {
-                // Open in new tab
-                if (chrome?.tabs?.create) {
+                // Open in same tab
+                if (chrome?.tabs?.query) {
                     try {
-                        chrome.tabs.create({ url: url, active: false }, (tab) => {
-                            if (chrome.runtime.lastError) {
-                                console.error('[Bookmarks] Error creating tab:', chrome.runtime.lastError);
-                                // Fallback to window.open
-                                window.open(url, '_blank');
+                        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+                            if (tabs && tabs[0]) {
+                                chrome.tabs.update(tabs[0].id, { url: url }, (tab) => {
+                                    if (chrome.runtime.lastError) {
+                                        console.error('[Bookmarks] Error updating tab:', chrome.runtime.lastError);
+                                        // Fallback to window.location
+                                        window.location.href = url;
+                                    } else {
+                                        console.log('[Bookmarks] Opened bookmark in current tab:', tab?.title);
+                                    }
+                                });
                             } else {
-                                console.log('[Bookmarks] Opened bookmark in new tab:', tab?.title);
+                                window.location.href = url;
                             }
                         });
                     } catch (error) {
-                        console.error('[Bookmarks] Tab creation error:', error);
-                        window.open(url, '_blank');
+                        console.error('[Bookmarks] Tab update error:', error);
+                        window.location.href = url;
                     }
                 } else {
                     // Fallback when Chrome API not available
-                    window.open(url, '_blank');
+                    window.location.href = url;
                 }
             }
         }
