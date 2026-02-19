@@ -561,3 +561,70 @@ Open Chrome DevTools (F12) on the new tab page to:
 **Made with ❤️ for productivity enthusiasts**
 
 *Transform your new tab into the ultimate productivity workspace with sticky notes, advanced task management, intelligent bookmark organization, and beautiful themes!*
+
+---
+
+## 🗺️ Planned Gen AI Features (Roadmap)
+
+### Priority 1: Smart Task Assistant
+AI-powered task analysis that suggests task breakdown, priority levels, and deadlines using the Claude API (claude-3-5-sonnet-20241022).
+
+**Input/Output:**
+```javascript
+// Input
+{ taskTitle: string, taskDescription: string }
+
+// Output
+{
+  subtasks: [{ title: string, estimatedHours: number }],
+  suggestedPriority: "high" | "medium" | "low",
+  estimatedDays: number,
+  suggestedTemplate: string // optional
+}
+```
+
+**Files:** `modules/AIAssistant.js`, `modules/aiConfig.js`, modify `modules/TaskTracker.js`
+
+---
+
+### Priority 2: Search & Filter Across Modules
+Global search across all notes, tasks, and bookmarks with advanced filtering and relevance ranking.
+
+**Files:** `modules/SearchEngine.js`, `modules/SearchResultsPanel.js`
+
+---
+
+### Priority 3: Smart Productivity Dashboard
+Analytics dashboard showing productivity metrics, work patterns, and task predictions.
+
+**Metrics:** Productivity score, optimal work hours heatmap, burndown chart, topic clustering, completion predictions.
+
+**Files:** `modules/AnalyticsEngine.js`, `modules/DashboardModule.js`
+
+---
+
+### Priority 4: Note-to-Task Conversion
+Extract action items from notes and auto-create tasks with AI analysis.
+
+**Files:** `modules/AIAssistant.js` (extend), `modules/NoteTaskLinker.js`, `modules/NoteConversionModal.js`
+
+---
+
+### Priority 5: Time Blocking & Calendar View
+Calendar-based task management with drag-to-schedule and recurring task support (month/week/day views).
+
+**Files:** `modules/CalendarEngine.js`, `modules/CalendarModule.js`
+
+---
+
+### Roadmap Summary
+
+| # | Feature | Complexity | API Needed |
+|---|---------|-----------|-----------|
+| 1 | Smart Task Assistant | Medium | Claude API |
+| 2 | Search & Filter | Low | None |
+| 3 | Productivity Dashboard | High | None |
+| 4 | Note-to-Task Conversion | Low | Claude API |
+| 5 | Time Blocking & Calendar | High | None |
+
+**Implementation order:** 1 → 2 → 3 → 4 → 5

@@ -544,11 +544,6 @@ body.light-theme .bookmark-edit-actions .bookmark-cancel-btn {
     font-size: 10px !important;
 }
 
-/* Light theme tooltip fix */
-body.light-theme .sidebar-tab-item .tab-tooltip {
-    background: rgba(0, 0, 0, 0.9) !important;
-    color: white !important;
-}
 
 /* Fix sidebar tab item text visibility in light theme */
 body.light-theme .tab-title-input {
@@ -953,11 +948,6 @@ body.dark-theme .btn-secondary {
     border: 1px solid var(--border-primary);
 }
 
-/* Tooltip Dark Theme */
-body.dark-theme .sidebar-tab-item .tab-tooltip {
-    background: rgba(0, 0, 0, 0.95);
-    color: var(--text-primary);
-}
 
 /* Floating Actions Dark Theme */
 body.dark-theme .floating-action-btn {
@@ -1964,6 +1954,59 @@ body.dark-theme .clear-notes-fab {
     min-height: 80px;
 }
 
+.form-group.ai-suggest-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.ai-suggestions-result {
+    padding: 12px;
+    border-radius: 8px;
+    background: rgba(52, 152, 219, 0.08);
+    border: 1px solid rgba(52, 152, 219, 0.25);
+    font-size: 13px;
+}
+
+.ai-suggestions-result .ai-reasoning {
+    margin: 0 0 10px 0;
+    color: var(--text-primary, #2c3e50);
+}
+
+.ai-suggestions-result .ai-subtasks-title {
+    margin: 8px 0 4px 0;
+}
+
+.ai-suggestions-result .ai-subtasks-list {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.ai-suggestions-result .ai-estimate {
+    margin: 8px 0 0 0;
+    color: var(--text-secondary, #7f8c8d);
+}
+
+.ai-suggestions-result .ai-suggestions-error {
+    margin: 0;
+    color: #c0392b;
+}
+
+.ai-suggestions-result .ai-suggestions-badge {
+    margin: 0 0 8px 0;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--accent-primary, #3498db);
+    font-weight: 600;
+}
+
+.ai-suggestions-result .ai-template {
+    margin: 6px 0 0 0;
+    font-size: 12px;
+    color: var(--text-secondary, #7f8c8d);
+}
+
 .modal-footer {
     display: flex;
     justify-content: flex-end;
@@ -2453,31 +2496,29 @@ body.light-theme .clean-bookmarks-list.drag-over .clean-bookmark-item:not(.dragg
     display: none !important;
 }
 
-/* Tooltip styles for collapsed sidebar */
-.sidebar-tab-item .tab-tooltip {
-    position: absolute;
-    left: calc(100% + 8px);
-    top: 50%;
+/* Global fixed-position tab hover tooltip (not clipped by overflow-y: auto) */
+.tab-hover-tooltip {
+    position: fixed;
     transform: translateY(-50%);
     background: rgba(0, 0, 0, 0.9);
     color: white;
     padding: 8px 12px;
     border-radius: 6px;
-    font-size: 12px;
-    font-weight: 500;
-    white-space: nowrap;
-    z-index: 1001;
+    z-index: 9999;
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.2s ease, visibility 0.2s ease;
+    transition: opacity 0.15s ease, visibility 0.15s ease;
     backdrop-filter: blur(10px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    max-width: 300px;
+    max-width: 280px;
+    min-width: 140px;
     pointer-events: none;
-    line-height: 1.4;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
 }
 
-.sidebar-tab-item .tab-tooltip::before {
+.tab-hover-tooltip::before {
     content: '';
     position: absolute;
     top: 50%;
@@ -2487,16 +2528,32 @@ body.light-theme .clean-bookmarks-list.drag-over .clean-bookmark-item:not(.dragg
     border-right-color: rgba(0, 0, 0, 0.9);
 }
 
-/* Show tooltip only in collapsed state on hover */
-.bookmarks-sidebar.collapsed .sidebar-tab-item:hover .tab-tooltip {
+.tab-hover-tooltip.visible {
     opacity: 1;
     visibility: visible;
-    transition-delay: 0.3s;
 }
 
-/* Ensure tooltip is hidden in expanded state */
-.bookmarks-sidebar.visible .sidebar-tab-item .tab-tooltip {
-    display: none;
+.tht-title {
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+.tht-domain {
+    font-size: 11px;
+    opacity: 0.75;
+    word-break: break-all;
+}
+
+body.light-theme .tab-hover-tooltip {
+    background: rgba(0, 0, 0, 0.9) !important;
+    color: white !important;
+}
+
+body.dark-theme .tab-hover-tooltip {
+    background: rgba(30, 30, 30, 0.97);
+    color: var(--text-primary);
 }
 
 /* Main Content Styles */
@@ -3764,3 +3821,4 @@ body.light-theme .bookmark-drop-indicator {
 .bookmark-item {
     animation: bookmarkSlideIn 0.3s ease forwards;
 }
+

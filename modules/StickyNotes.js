@@ -23,6 +23,20 @@ class StickyNotes {
             this.setupEventListeners();
             await this.loadNotesData();
             await this.setupStorageListener();
+
+            // Flush all current DOM positions to storage when the tab is
+            // hidden or closed. The async message-passing path (sendMessage →
+            // background → chrome.storage.local.set) can be dropped when all
+            // tabs are closed simultaneously, causing position loss on reopen.
+            // Writing directly to chrome.storage.local here is reliable even
+            // during page unload because the browser queues the write
+            // immediately in the browser process.
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'hidden') {
+                    this.flushPositionsToStorage();
+                }
+            });
+
             console.log('[StickyNotes] Initialization complete');
         } catch (error) {
             console.error('[StickyNotes] Initialization failed:', error);
@@ -721,6 +735,49 @@ class StickyNotes {
         element._resizeObserver = resizeObserver;
     }
 
+    // Called on visibilitychange (tab hidden/closed). Reads positions directly
+    // from the DOM and writes to chrome.storage.local without going through
+    // the background service worker, which may already be terminating.
+    flushPositionsToStorage() {
+        try {
+            const container = document.getElementById('notes-floating-container');
+            if (!container || !this.stickyNotes.length) return;
+
+            const noteElements = container.querySelectorAll('.windows-sticky-note');
+            if (!noteElements.length) return;
+
+            let changed = false;
+            noteElements.forEach(el => {
+                const noteId = el.dataset.noteId;
+                const note = this.stickyNotes.find(n => n.id == noteId);
+                if (!note) return;
+
+                const x = el.offsetLeft;
+                const y = el.offsetTop;
+                const width = parseInt(el.style.width) || note.width || 200;
+                const height = parseInt(el.style.height) || note.height || 200;
+
+                if (note.x !== x || note.y !== y || note.width !== width || note.height !== height) {
+                    note.x = x;
+                    note.y = y;
+                    note.width = width;
+                    note.height = height;
+                    note.updatedAt = Date.now();
+                    changed = true;
+                }
+            });
+
+            if (changed) {
+                // Fire-and-forget: chrome.storage queues the write in the
+                // browser process, so it completes even if the page closes.
+                chrome.storage.local.set({ notes: this.stickyNotes });
+                console.log('[StickyNotes] Flushed note positions to storage on page hide');
+            }
+        } catch (error) {
+            console.error('[StickyNotes] Error flushing positions to storage:', error);
+        }
+    }
+
     async saveNotePosition(noteId, updates) {
         try {
             // Find the note and update it
@@ -850,6 +907,33 @@ class StickyNotes {
             this.util.showError('Failed to create note');
             // Reset flag on error
             this.isUpdatingStorage = false;
+        }
+    }
+
+    /** Create a note with given title and content (e.g. from voice → AI). Returns when saved. */
+    async createNoteWithContent(title, content) {
+        const container = document.getElementById('notes-floating-container');
+        if (!container) throw new Error('Notes container not found');
+        const availableHeight = window.innerHeight - 80;
+        const x = Math.random() * (window.innerWidth - 220) + 10;
+        const y = Math.random() * (availableHeight - 190) + 10;
+        const note = {
+            id: Date.now().toString(),
+            title: (title || '').trim() || 'Untitled',
+            content: (content || '').trim() || '',
+            color: this.getRandomNoteColor(),
+            x: Math.max(10, Math.min(x - 100, window.innerWidth - 210)),
+            y: Math.max(10, Math.min(y - 100, (window.innerHeight - 80) - 180)),
+            width: 200,
+            height: 200
+        };
+        this.isUpdatingStorage = true;
+        try {
+            const response = await this.util.sendMessageToBackground({ action: 'saveNote', note });
+            if (!response.success) throw new Error(response.error || 'Save failed');
+            await this.loadFloatingNotes();
+        } finally {
+            setTimeout(() => { this.isUpdatingStorage = false; }, 200);
         }
     }
 

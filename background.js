@@ -1,3 +1,16 @@
+// Load AI provider config (edit ai-api.config.js to set Azure endpoint, deployment, etc.)
+try {
+    importScripts('ai-api.config.js');
+} catch (e) {
+    console.warn('[AI] ai-api.config.js not loaded, using defaults');
+}
+const AI_API_CONFIG = typeof self !== 'undefined' && self.AI_API_CONFIG ? self.AI_API_CONFIG : {
+    defaultProvider: 'anthropic',
+    anthropic: { api_key: '', model: 'claude-3-5-sonnet-20241022' },
+    azure: { endpoint: '', deployment: '', api_version: '2024-02-15-preview', api_key: '' },
+    openai: { api_key: '', model: 'gpt-4o-mini' }
+};
+
 // Background script for Sticky Notes extension
 class StickyNotesBackground {
     constructor() {
@@ -256,6 +269,98 @@ class StickyNotesBackground {
                     }
                     break;
 
+                // AI Assistant actions
+                case 'callClaudeAPI':
+                case 'callAIAPI':
+                    try {
+                        const result = await this.callAIAPI(message.prompt, message.settings || message.apiKey);
+                        sendResponse(result);
+                    } catch (apiError) {
+                        console.error('❌ Error in callAIAPI:', apiError);
+                        sendResponse({ success: false, error: apiError.message });
+                    }
+                    break;
+
+                case 'getAISettings':
+                    try {
+                        const settings = await this.getAISettings();
+                        sendResponse({ success: true, data: settings });
+                    } catch (getError) {
+                        console.error('❌ Error in getAISettings:', getError);
+                        sendResponse({ success: false, error: getError.message });
+                    }
+                    break;
+
+                case 'saveAISettings':
+                    try {
+                        await this.saveAISettings(message.settings);
+                        sendResponse({ success: true });
+                    } catch (saveError) {
+                        console.error('❌ Error in saveAISettings:', saveError);
+                        sendResponse({ success: false, error: saveError.message });
+                    }
+                    break;
+
+                case 'checkRateLimit':
+                    try {
+                        const allowed = await this.checkRateLimit();
+                        sendResponse({ success: true, allowed: allowed });
+                    } catch (checkError) {
+                        console.error('❌ Error in checkRateLimit:', checkError);
+                        sendResponse({ success: false, error: checkError.message });
+                    }
+                    break;
+
+                case 'incrementRateLimit':
+                    try {
+                        await this.incrementRateLimit();
+                        sendResponse({ success: true });
+                    } catch (incError) {
+                        console.error('❌ Error in incrementRateLimit:', incError);
+                        sendResponse({ success: false, error: incError.message });
+                    }
+                    break;
+
+                case 'getResetTime':
+                    try {
+                        const minutes = await this.getResetTime();
+                        sendResponse({ success: true, minutes: minutes });
+                    } catch (resetError) {
+                        console.error('❌ Error in getResetTime:', resetError);
+                        sendResponse({ success: false, error: resetError.message });
+                    }
+                    break;
+
+                case 'getAICache':
+                    try {
+                        const cache = await this.getAICache();
+                        sendResponse({ success: true, data: cache });
+                    } catch (cacheError) {
+                        console.error('❌ Error in getAICache:', cacheError);
+                        sendResponse({ success: false, error: cacheError.message });
+                    }
+                    break;
+
+                case 'saveAICache':
+                    try {
+                        await this.saveAICache(message.cache);
+                        sendResponse({ success: true });
+                    } catch (saveError) {
+                        console.error('❌ Error in saveAICache:', saveError);
+                        sendResponse({ success: false, error: saveError.message });
+                    }
+                    break;
+
+                case 'getRateLimitStatus':
+                    try {
+                        const status = await this.getRateLimitStatus();
+                        sendResponse({ success: true, data: status });
+                    } catch (statusError) {
+                        console.error('❌ Error in getRateLimitStatus:', statusError);
+                        sendResponse({ success: false, error: statusError.message });
+                    }
+                    break;
+
                 default:
                     console.warn('Unknown action:', message.action);
                     sendResponse({ success: false, error: 'Unknown action' });
@@ -324,6 +429,13 @@ class StickyNotesBackground {
     }
 
     async getNotes() {
+        // Always read from chrome.storage.local directly.
+        // Returning this.stickyNotes (in-memory) is unsafe: when the service
+        // worker restarts after all tabs are closed, loadNotesFromStorage() is
+        // called without await in init(), so this.stickyNotes may still be []
+        // when the first getNotes message arrives.
+        const result = await chrome.storage.local.get(['notes']);
+        this.stickyNotes = result.notes || [];
         return this.stickyNotes;
     }
 
@@ -844,6 +956,351 @@ class StickyNotesBackground {
 
         console.log('🔍 Final permission status:', status);
         return status;
+    }
+
+    // AI Assistant Functions – multi-provider (Anthropic, Azure OpenAI, OpenAI)
+
+    async callAIAPI(prompt, settingsOrApiKey) {
+        const settings = await this.getMergedAISettings(settingsOrApiKey);
+        const provider = (settings.api_provider || AI_API_CONFIG.defaultProvider || 'anthropic').toLowerCase();
+
+        if (provider === 'azure') {
+            return this.callAzureOpenAI(prompt, settings);
+        }
+        if (provider === 'openai') {
+            return this.callOpenAI(prompt, settings);
+        }
+        return this.callAnthropicAPI(prompt, settings);
+    }
+
+    async getMergedAISettings(settingsOrApiKey) {
+        const stored = await this.getAISettings();
+        const config = AI_API_CONFIG || {};
+        let settings = { ...stored };
+
+        if (typeof settingsOrApiKey === 'string') {
+            settings.api_key = settingsOrApiKey;
+            settings.api_provider = settings.api_provider || config.defaultProvider || 'anthropic';
+        } else if (settingsOrApiKey && typeof settingsOrApiKey === 'object') {
+            settings = { ...settings, ...settingsOrApiKey };
+        }
+
+        const provider = (settings.api_provider || config.defaultProvider || 'anthropic').toLowerCase();
+        if (provider === 'azure') {
+            const cfg = config.azure || {};
+            settings.azure_endpoint = settings.azure_endpoint || cfg.endpoint || '';
+            settings.azure_deployment = settings.azure_deployment || cfg.deployment || '';
+            settings.azure_api_version = settings.azure_api_version || cfg.api_version || '2024-02-15-preview';
+            settings.api_key = settings.api_key || cfg.api_key || '';
+        }
+        if (provider === 'openai') {
+            settings.api_key = settings.api_key || (config.openai && config.openai.api_key) || '';
+        }
+        if (provider === 'anthropic') {
+            settings.api_key = settings.api_key || (config.anthropic && config.anthropic.api_key) || '';
+        }
+        return settings;
+    }
+
+    async callAnthropicAPI(prompt, settings) {
+        const apiKey = settings.api_key;
+        const model = (AI_API_CONFIG.anthropic && AI_API_CONFIG.anthropic.model) || 'claude-3-5-sonnet-20241022';
+        console.log('[AI] Calling Anthropic API...');
+
+        const maxRetries = 3;
+        let attempt = 0;
+        while (attempt < maxRetries) {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
+                const response = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: {
+                        'x-api-key': apiKey,
+                        'anthropic-version': '2023-06-01',
+                        'content-type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        max_tokens: 1024,
+                        messages: [{ role: 'user', content: prompt }]
+                    }),
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    const errBody = await response.json().catch(() => ({}));
+                    if (response.status === 401) throw new Error('Invalid API key');
+                    if (response.status === 429) throw new Error('Rate limit reached');
+                    if (response.status >= 500 && attempt < maxRetries - 1) {
+                        attempt++;
+                        await this.sleep(Math.pow(2, attempt) * 1000);
+                        continue;
+                    }
+                    throw new Error(errBody.error?.message || `API error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const content = data.content[0].text;
+                const parsed = JSON.parse(content);
+                console.log('[AI] Anthropic API call successful');
+                return { success: true, data: parsed };
+            } catch (error) {
+                if (error.name === 'AbortError') throw new Error('Request timeout');
+                if (attempt === maxRetries - 1) {
+                    console.error('[AI] Anthropic API failed:', error);
+                    return { success: false, error: error.message };
+                }
+                attempt++;
+            }
+        }
+    }
+
+    async callAzureOpenAI(prompt, settings) {
+        const apiKey = settings.api_key;
+        let endpoint = (settings.azure_endpoint || '').trim().replace(/\/$/, '');
+        const deployment = (settings.azure_deployment || '').trim();
+        const apiVersion = settings.azure_api_version || '2024-02-15-preview';
+
+        if (!endpoint || !deployment) {
+            return { success: false, error: 'Azure OpenAI: set endpoint and deployment in ai-api.config.js or AI Settings.' };
+        }
+        if (!apiKey) {
+            return { success: false, error: 'Azure OpenAI: API key required. Set in ai-api.config.js or AI Settings.' };
+        }
+
+        const url = `${endpoint}/openai/deployments/${encodeURIComponent(deployment)}/chat/completions?api-version=${apiVersion}`;
+        console.log('[AI] Calling Azure OpenAI...');
+
+        const maxRetries = 3;
+        let attempt = 0;
+        while (attempt < maxRetries) {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000);
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'api-key': apiKey,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        messages: [{ role: 'user', content: prompt }],
+                        max_tokens: 1024,
+                        temperature: 0.2
+                    }),
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    const errBody = await response.json().catch(() => ({}));
+                    if (response.status === 401) throw new Error('Invalid API key');
+                    if (response.status === 429) throw new Error('Rate limit reached');
+                    if (response.status >= 500 && attempt < maxRetries - 1) {
+                        attempt++;
+                        await this.sleep(Math.pow(2, attempt) * 1000);
+                        continue;
+                    }
+                    const msg = errBody.error?.message || errBody.error || `API error: ${response.status}`;
+                    throw new Error(msg);
+                }
+
+                const data = await response.json();
+                const content = data.choices && data.choices[0] && data.choices[0].message
+                    ? data.choices[0].message.content
+                    : '';
+                const parsed = JSON.parse(content);
+                console.log('[AI] Azure OpenAI call successful');
+                return { success: true, data: parsed };
+            } catch (error) {
+                if (error.name === 'AbortError') throw new Error('Request timeout');
+                if (attempt === maxRetries - 1) {
+                    console.error('[AI] Azure OpenAI failed:', error);
+                    return { success: false, error: error.message };
+                }
+                attempt++;
+            }
+        }
+    }
+
+    async callOpenAI(prompt, settings) {
+        const apiKey = settings.api_key;
+        const model = (AI_API_CONFIG.openai && AI_API_CONFIG.openai.model) || 'gpt-4o-mini';
+        console.log('[AI] Calling OpenAI API...');
+
+        const maxRetries = 3;
+        let attempt = 0;
+        while (attempt < maxRetries) {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000);
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        messages: [{ role: 'user', content: prompt }],
+                        max_tokens: 1024,
+                        temperature: 0.2
+                    }),
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    const errBody = await response.json().catch(() => ({}));
+                    if (response.status === 401) throw new Error('Invalid API key');
+                    if (response.status === 429) throw new Error('Rate limit reached');
+                    if (response.status >= 500 && attempt < maxRetries - 1) {
+                        attempt++;
+                        await this.sleep(Math.pow(2, attempt) * 1000);
+                        continue;
+                    }
+                    throw new Error(errBody.error?.message || `API error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const content = data.choices && data.choices[0] && data.choices[0].message
+                    ? data.choices[0].message.content
+                    : '';
+                const parsed = JSON.parse(content);
+                console.log('[AI] OpenAI API call successful');
+                return { success: true, data: parsed };
+            } catch (error) {
+                if (error.name === 'AbortError') throw new Error('Request timeout');
+                if (attempt === maxRetries - 1) {
+                    console.error('[AI] OpenAI API failed:', error);
+                    return { success: false, error: error.message };
+                }
+                attempt++;
+            }
+        }
+    }
+
+    sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async getAISettings() {
+        const result = await chrome.storage.local.get(['ai_settings']);
+        return result.ai_settings || {
+            api_provider: AI_API_CONFIG.defaultProvider || 'anthropic',
+            api_key: null,
+            auto_suggest: false,
+            azure_endpoint: AI_API_CONFIG.azure?.endpoint || '',
+            azure_deployment: AI_API_CONFIG.azure?.deployment || '',
+            azure_api_version: AI_API_CONFIG.azure?.api_version || '2024-02-15-preview',
+            rate_limit: {
+                max_calls: 10,
+                period_hours: 1,
+                call_history: []
+            }
+        };
+    }
+
+    async saveAISettings(settings) {
+        // Preserve rate limit if not included
+        const current = await this.getAISettings();
+        if (!settings.rate_limit) {
+            settings.rate_limit = current.rate_limit;
+        }
+
+        await chrome.storage.local.set({ ai_settings: settings });
+        console.log('[AI] Settings saved');
+    }
+
+    async checkRateLimit() {
+        const settings = await this.getAISettings();
+        const rateLimit = settings.rate_limit || {
+            max_calls: 10,
+            call_history: []
+        };
+
+        const now = Date.now();
+        const oneHourAgo = now - 3600000;
+
+        // Remove calls older than 1 hour
+        rateLimit.call_history = rateLimit.call_history.filter(ts => ts > oneHourAgo);
+
+        const allowed = rateLimit.call_history.length < rateLimit.max_calls;
+
+        // Save updated history
+        settings.rate_limit = rateLimit;
+        await this.saveAISettings(settings);
+
+        return allowed;
+    }
+
+    async incrementRateLimit() {
+        const settings = await this.getAISettings();
+        const rateLimit = settings.rate_limit || {
+            max_calls: 10,
+            call_history: []
+        };
+
+        rateLimit.call_history.push(Date.now());
+
+        settings.rate_limit = rateLimit;
+        await this.saveAISettings(settings);
+
+        console.log('[AI] Rate limit incremented:', rateLimit.call_history.length, '/', rateLimit.max_calls);
+    }
+
+    async getResetTime() {
+        const settings = await this.getAISettings();
+        const rateLimit = settings.rate_limit || { call_history: [] };
+
+        if (rateLimit.call_history.length === 0) {
+            return 0;
+        }
+
+        const now = Date.now();
+        const oneHourAgo = now - 3600000;
+        const validCalls = rateLimit.call_history.filter(ts => ts > oneHourAgo);
+
+        if (validCalls.length === 0) {
+            return 0;
+        }
+
+        const oldestCall = Math.min(...validCalls);
+        const resetTime = oldestCall + 3600000;
+        const remainingMs = resetTime - now;
+
+        return Math.max(0, Math.ceil(remainingMs / 60000)); // Minutes
+    }
+
+    async getAICache() {
+        const result = await chrome.storage.local.get(['ai_cache']);
+        return result.ai_cache || {};
+    }
+
+    async saveAICache(cache) {
+        await chrome.storage.local.set({ ai_cache: cache });
+    }
+
+    async getRateLimitStatus() {
+        const settings = await this.getAISettings();
+        const rateLimit = settings.rate_limit || {
+            max_calls: 10,
+            call_history: []
+        };
+
+        const now = Date.now();
+        const oneHourAgo = now - 3600000;
+        const validCalls = rateLimit.call_history.filter(ts => ts > oneHourAgo);
+
+        const resetMinutes = await this.getResetTime();
+
+        return {
+            current: validCalls.length,
+            max: rateLimit.max_calls,
+            resetMinutes: resetMinutes
+        };
     }
 }
 

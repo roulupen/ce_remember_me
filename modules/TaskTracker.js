@@ -16,6 +16,7 @@ class TaskTracker {
             'tomorrow': new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
             'future': null // Special case for future tasks
         };
+        this.pendingAIAnalysis = null; // AI result to store with task on save
     }
 
     // Initialize task tracker functionality
@@ -79,6 +80,11 @@ class TaskTracker {
             });
         } else {
             console.error('[TaskTracker] Close modal button not found!');
+        }
+
+        const getAISuggestionsBtn = document.getElementById('get-ai-suggestions-btn');
+        if (getAISuggestionsBtn) {
+            getAISuggestionsBtn.addEventListener('click', () => this.getAISuggestions());
         }
 
         // Setup drag and drop for all task columns
@@ -575,6 +581,17 @@ class TaskTracker {
                 console.log('📝 No reminder set, clearing field');
                 reminderInput.value = '';
             }
+            if (task.aiAnalysis) {
+                this.pendingAIAnalysis = task.aiAnalysis;
+                this.renderAISuggestionsInModal(task.aiAnalysis);
+            } else {
+                this.pendingAIAnalysis = null;
+                const resultEl = document.getElementById('ai-suggestions-result');
+                if (resultEl) {
+                    resultEl.style.display = 'none';
+                    resultEl.innerHTML = '';
+                }
+            }
         } else {
             console.log('📝 Creating new task');
             titleEl.textContent = 'Add Task';
@@ -583,6 +600,12 @@ class TaskTracker {
             prioritySelect.value = 'medium';
             dateSelect.value = 'today';
             reminderInput.value = '';
+            this.pendingAIAnalysis = null;
+            const resultEl = document.getElementById('ai-suggestions-result');
+            if (resultEl) {
+                resultEl.style.display = 'none';
+                resultEl.innerHTML = '';
+            }
         }
 
         console.log('[TaskTracker] Adding active class to modal and focusing title input...');
@@ -604,8 +627,88 @@ class TaskTracker {
 
     closeTaskModal() {
         const modal = document.getElementById('task-modal');
-        modal.classList.remove('active');
+        if (modal) modal.classList.remove('active');
         this.currentEditingTask = null;
+        this.pendingAIAnalysis = null;
+        const resultEl = document.getElementById('ai-suggestions-result');
+        if (resultEl) {
+            resultEl.style.display = 'none';
+            resultEl.innerHTML = '';
+        }
+    }
+
+    renderAISuggestionsInModal(analysis) {
+        const resultEl = document.getElementById('ai-suggestions-result');
+        if (!resultEl || !analysis) return;
+        let html = '<div class="ai-suggestions-content">';
+        html += '<p class="ai-suggestions-badge">Stored AI notes</p>';
+        html += `<p class="ai-reasoning"><strong>Why:</strong> ${this.util.escapeHtml(analysis.reasoning || '')}</p>`;
+        if (analysis.subtasks && analysis.subtasks.length > 0) {
+            html += '<p class="ai-subtasks-title"><strong>Suggested subtasks:</strong></p><ul class="ai-subtasks-list">';
+            analysis.subtasks.forEach(sub => {
+                const hrs = sub.estimatedHours != null ? ` (~${sub.estimatedHours}h)` : '';
+                html += `<li>${this.util.escapeHtml(sub.title || sub)}${hrs}</li>`;
+            });
+            html += '</ul>';
+        }
+        if (analysis.estimatedDays != null) {
+            html += `<p class="ai-estimate"><strong>Rough estimate:</strong> ${analysis.estimatedDays} day(s)</p>`;
+        }
+        if (analysis.suggestedTemplate) {
+            html += `<p class="ai-template"><strong>Template:</strong> ${this.util.escapeHtml(analysis.suggestedTemplate)}</p>`;
+        }
+        html += '</div>';
+        resultEl.innerHTML = html;
+        resultEl.style.display = 'block';
+    }
+
+    async getAISuggestions() {
+        const titleInput = document.getElementById('task-title');
+        const descInput = document.getElementById('task-description');
+        const prioritySelect = document.getElementById('task-priority');
+        const resultEl = document.getElementById('ai-suggestions-result');
+        const btn = document.getElementById('get-ai-suggestions-btn');
+        if (!titleInput || !prioritySelect || !resultEl || !btn) return;
+
+        const title = titleInput.value.trim();
+        if (!title) {
+            this.util.showError('Enter a task title first, then click "Get AI suggestions".');
+            titleInput.focus();
+            return;
+        }
+
+        if (!window.AIAssistant) {
+            this.util.showError('AI Assistant is not loaded. Refresh the page.');
+            return;
+        }
+        const configured = await window.AIAssistant.isConfigured();
+        if (!configured) {
+            this.util.showError('Configure your API key in AI Settings (button below) first.');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = '… Getting suggestions…';
+        resultEl.style.display = 'none';
+        resultEl.innerHTML = '';
+
+        try {
+            const description = (descInput && descInput.value) ? descInput.value.trim() : '';
+            const analysis = await window.AIAssistant.analyzeTask(title, description);
+
+            this.pendingAIAnalysis = analysis;
+            prioritySelect.value = analysis.suggestedPriority || 'medium';
+            this.renderAISuggestionsInModal(analysis);
+            this.util.showSuccess('Suggestions applied. Save the task to store these AI notes.');
+        } catch (err) {
+            console.error('[TaskTracker] AI suggestions error:', err);
+            this.util.showError('Could not get AI suggestions: ' + (err.message || 'Unknown error'));
+            resultEl.innerHTML = `<p class="ai-suggestions-error">${this.util.escapeHtml(err.message || 'Request failed')}</p>`;
+            resultEl.style.display = 'block';
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '✨ Get AI suggestions';
+        }
     }
 
     async saveTask() {
@@ -653,6 +756,13 @@ class TaskTracker {
             reminder: reminder,
             completed: false
         };
+
+        if (this.pendingAIAnalysis) {
+            task.aiAnalysis = this.pendingAIAnalysis;
+            this.pendingAIAnalysis = null;
+        } else if (this.currentEditingTask && this.currentEditingTask.aiAnalysis) {
+            task.aiAnalysis = this.currentEditingTask.aiAnalysis;
+        }
 
         if (this.currentEditingTask) {
             // Update existing task

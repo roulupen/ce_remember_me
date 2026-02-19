@@ -32,6 +32,9 @@ class Bookmarks {
             // Get current Chrome tabs
             await this.loadCurrentTabs();
             
+            // Create global hover tooltip (fixed-position, escapes overflow clipping)
+            this.createHoverTooltip();
+
             // Setup event listeners
             this.setupEventListeners();
             
@@ -356,6 +359,47 @@ class Bookmarks {
         document.addEventListener('dragover', (e) => this.handleDragOver(e));
         document.addEventListener('drop', (e) => this.handleDrop(e));
         document.addEventListener('dragend', (e) => this.handleDragEnd(e));
+
+        // Tab hover tooltip (event delegation on document)
+        document.addEventListener('mouseover', (e) => {
+            const tabItem = e.target.closest('#bookmarks-sidebar .sidebar-tab-item');
+            if (tabItem) this.showHoverTooltip(tabItem);
+        });
+        document.addEventListener('mouseout', (e) => {
+            const tabItem = e.target.closest('#bookmarks-sidebar .sidebar-tab-item');
+            if (tabItem && !tabItem.contains(e.relatedTarget)) this.hideHoverTooltip();
+        });
+        // Hide tooltip when dragging starts
+        document.addEventListener('dragstart', () => this.hideHoverTooltip());
+    }
+
+    createHoverTooltip() {
+        const el = document.createElement('div');
+        el.id = 'tab-hover-tooltip';
+        el.className = 'tab-hover-tooltip';
+        el.innerHTML = '<span class="tht-title"></span><span class="tht-domain"></span>';
+        document.body.appendChild(el);
+        this.hoverTooltip = el;
+    }
+
+    showHoverTooltip(tabItem) {
+        if (!this.hoverTooltip) return;
+        const titleEl = tabItem.querySelector('.tab-title-input');
+        const title = titleEl ? titleEl.value : tabItem.dataset.url || '';
+        let domain = tabItem.dataset.url || '';
+        try { domain = new URL(tabItem.dataset.url).hostname; } catch(e) {}
+
+        this.hoverTooltip.querySelector('.tht-title').textContent = title;
+        this.hoverTooltip.querySelector('.tht-domain').textContent = domain;
+
+        const rect = tabItem.getBoundingClientRect();
+        this.hoverTooltip.style.top = `${rect.top + rect.height / 2}px`;
+        this.hoverTooltip.style.left = `${rect.right + 10}px`;
+        this.hoverTooltip.classList.add('visible');
+    }
+
+    hideHoverTooltip() {
+        if (this.hoverTooltip) this.hoverTooltip.classList.remove('visible');
     }
 
     setupTabEventListeners() {
@@ -606,11 +650,11 @@ class Bookmarks {
                     const favicon = tab.favIconUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0iIzY2NyIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTggMmE2IDYgMCAwIDEgNiA2djJhNiA2IDAgMCAxLTYgNiA2IDYgMCAwIDEtNi02VjhhNiA2IDAgMCAxIDYtNnoiLz4KPC9zdmc+';
                     const title = tab.title || tab.url || `Tab ${tab.id}` || `Browser Tab ${index + 1}`;
                     const url = tab.url || `chrome://tab/${tab.id}`;
-                    
+
                     // Processing tab
                     
                     return `
-                        <div class="sidebar-tab-item" data-tab-id="${tab.id}" data-url="${this.escapeHtml(url)}" data-favicon="${this.escapeHtml(favicon)}" draggable="true" title="Drag to bookmark group or click to switch">
+                        <div class="sidebar-tab-item" data-tab-id="${tab.id}" data-url="${this.escapeHtml(url)}" data-favicon="${this.escapeHtml(favicon)}" draggable="true">
                             <img src="${favicon}" alt="favicon" class="tab-favicon" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0iIzY2NyIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTggMmE2IDYgMCAwIDEgNiA2djJhNiA2IDAgMCExLTYgNiA2IDYgMCAwIDEtNi02VjhhNiA2IDAgMCExIDYtNnoiLz4KPC9zdmc+'">
                             <div class="tab-info">
                                 <input type="text" class="tab-title-input" value="${this.escapeHtml(title)}" data-original-title="${this.escapeHtml(title)}" title="Click to edit title">
@@ -619,7 +663,6 @@ class Bookmarks {
                                     <input type="url" class="tab-url-input" value="${this.escapeHtml(url)}" data-original-url="${this.escapeHtml(url)}" placeholder="Enter URL..." title="Edit URL">
                                 </div>
                             </div>
-                            <div class="tab-tooltip">${this.escapeHtml(title)}<br><small>${this.escapeHtml(url)}</small></div>
                         </div>
                     `;
                 }).join('');

@@ -154,6 +154,12 @@
                     <label for="task-description">Description (Optional)</label>
                     <textarea id="task-description" placeholder="Add task description..." rows="3"></textarea>
                 </div>
+                <div class="form-group ai-suggest-row">
+                    <button type="button" id="get-ai-suggestions-btn" class="btn-secondary" title="Get suggested priority and subtasks from AI">
+                        ✨ Get AI suggestions
+                    </button>
+                    <div id="ai-suggestions-result" class="ai-suggestions-result" style="display: none;"></div>
+                </div>
                 <div class="form-group">
                     <label for="task-priority">Priority</label>
                     <select id="task-priority">
@@ -179,8 +185,46 @@
                 </div>
             </div>
             <div class="modal-footer">
+                <button type="button" id="ai-settings-btn" class="btn-secondary" title="Configure AI provider (Claude, Azure OpenAI, OpenAI)">AI Settings</button>
                 <button type="button" id="cancel-task" class="btn-secondary">Cancel</button>
                 <button type="button" id="save-task" class="btn-primary">Save Task</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Settings Modal -->
+    <div id="ai-settings-modal" class="modal">
+        <div class="modal-content task-modal-content">
+            <div class="modal-header">
+                <h3>AI Assistant Settings</h3>
+                <button class="modal-close" id="close-ai-settings">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="ai-provider">Provider</label>
+                    <select id="ai-provider">
+                        <option value="anthropic">Anthropic (Claude)</option>
+                        <option value="azure">Azure OpenAI (GPT)</option>
+                        <option value="openai">OpenAI (GPT)</option>
+                    </select>
+                </div>
+                <div id="ai-azure-fields" class="form-group" style="display: none;">
+                    <label for="ai-azure-endpoint">Azure endpoint URL</label>
+                    <input type="url" id="ai-azure-endpoint" placeholder="https://YOUR_RESOURCE.openai.azure.com">
+                    <label for="ai-azure-deployment" style="margin-top: 8px;">Deployment name</label>
+                    <input type="text" id="ai-azure-deployment" placeholder="gpt-4 or your deployment name">
+                    <p style="margin-top: 6px; font-size: 12px; color: var(--text-muted, #666);">Or set these in <code>ai-api.config.js</code> in the extension folder.</p>
+                </div>
+                <div class="form-group">
+                    <label for="ai-api-key">API Key</label>
+                    <input type="password" id="ai-api-key" placeholder="Your API key" autocomplete="off">
+                </div>
+                <div id="rate-limit-status" style="font-size: 12px; margin-top: 8px;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="test-api-key" class="btn-secondary">Test Connection</button>
+                <button type="button" id="cancel-ai-settings" class="btn-secondary">Cancel</button>
+                <button type="button" id="save-ai-settings" class="btn-primary">Save</button>
             </div>
         </div>
     </div>
@@ -193,7 +237,9 @@
     
     <!-- Load task tracker module -->
     <script src="modules/TaskTracker.js"></script>
-    
+    <!-- AI modules (config + assistant for task analysis) -->
+    <script src="modules/aiConfig.js"></script>
+    <script src="modules/AIAssistant.js"></script>
     <!-- Load bookmarks module -->
     <script src="modules/Bookmarks.js"></script>
 

@@ -99,15 +99,19 @@ class Utility {
     // ===== CHROME API UTILITIES =====
 
     /**
-     * Send message to background script
+     * Send message to background script (with timeout so UI never hangs)
      * @param {object} message - Message to send
+     * @param {number} timeoutMs - Max wait (default 8000ms)
      * @returns {Promise<any>} - Response from background script
      */
-    async sendMessageToBackground(message) {
+    async sendMessageToBackground(message, timeoutMs = 8000) {
         try {
-            console.log('[Utility] Sending message to background:', message);
-            const response = await chrome.runtime.sendMessage(message);
-            console.log('[Utility] Received response from background:', response);
+            const response = await Promise.race([
+                chrome.runtime.sendMessage(message),
+                new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Background script did not respond in time')), timeoutMs)
+                )
+            ]);
             return response;
         } catch (error) {
             console.error('[Utility] Error sending message to background:', error);

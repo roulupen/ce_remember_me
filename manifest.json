@@ -36,7 +36,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["newtab.html", "newtab.css", "modules/*.js"],
+      "resources": ["newtab.html", "newtab.css", "modules/*.js", "modules/stt/*.js"],
       "matches": ["<all_urls>"]
     }
   ]

@@ -35,17 +35,23 @@ class ProductivityApp {
             // Show loading indicator
             this.showLoadingIndicator();
             
-            // Initialize all modules in parallel for faster loading
-            const initPromises = [
+            // Initialize core modules first (don't block UI on AI/background)
+            const coreInitPromises = [
                 this.stickyNotes.init(),
                 this.taskTracker.init(),
                 this.bookmarks.init(),
                 this.notificationSound.init()
             ];
-            
-            await Promise.all(initPromises);
-            console.log('[ProductivityApp] All modules initialized');
-            
+            await Promise.all(coreInitPromises);
+            console.log('[ProductivityApp] Core modules initialized');
+
+            // Initialize AI modules without blocking – run in background so slow/failed background script doesn't hang the UI
+            if (window.AIConfig && typeof window.AIConfig.init === 'function') {
+                window.AIConfig.init().catch(err => console.warn('[ProductivityApp] AIConfig init deferred:', err));
+            }
+            if (window.AIAssistant && typeof window.AIAssistant.init === 'function') {
+                window.AIAssistant.init().catch(err => console.warn('[ProductivityApp] AIAssistant init deferred:', err));
+            }
             // Setup message listeners for sound system
             this.setupMessageListeners();
             
