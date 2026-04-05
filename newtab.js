@@ -6,6 +6,7 @@ class ProductivityApp {
         this.taskTracker = new TaskTracker();
         this.bookmarks = new Bookmarks();
         this.notificationSound = new NotificationSound();
+        this.jsonDiff = window.JsonDiff;
         
         // Theme management
         this.currentTheme = 'light'; // Default theme
@@ -40,7 +41,8 @@ class ProductivityApp {
                 this.stickyNotes.init(),
                 this.taskTracker.init(),
                 this.bookmarks.init(),
-                this.notificationSound.init()
+                this.notificationSound.init(),
+                Promise.resolve(this.jsonDiff?.init())
             ];
             await Promise.all(coreInitPromises);
             console.log('[ProductivityApp] Core modules initialized');
@@ -339,6 +341,11 @@ class ProductivityApp {
                         }
                     }, 200); // Small delay to ensure renderBookmarks completes first
                     break;
+
+                case 'jsondiff-tab':
+                    console.log('[ProductivityApp] Rendering JSON Diff tab');
+                    // Nothing to render — module is reactive (event-driven)
+                    break;
             }
             
             console.log('[ProductivityApp] Tab switched and saved:', tabId);
@@ -358,7 +365,7 @@ class ProductivityApp {
                 console.log('[ProductivityApp] Loaded saved tab:', this.currentTab);
                 
                 // Validate that the saved tab exists
-                const validTabs = ['notes-tab', 'tasks-tab', 'bookmarks-tab'];
+                const validTabs = ['notes-tab', 'tasks-tab', 'bookmarks-tab', 'jsondiff-tab'];
                 if (!validTabs.includes(this.currentTab)) {
                     console.warn('[ProductivityApp] Invalid saved tab, using default:', this.currentTab);
                     this.currentTab = 'notes-tab';

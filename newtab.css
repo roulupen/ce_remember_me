@@ -3822,3 +3822,472 @@ body.light-theme .bookmark-drop-indicator {
     animation: bookmarkSlideIn 0.3s ease forwards;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   JSON DIFF TAB
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Container – fills the entire tab area */
+.jd-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: var(--bg-primary);
+    overflow: hidden;
+    /* Explicitly set text color so it never inherits the body's #e0e0e0 */
+    color: var(--text-primary);
+}
+
+/* ── Toolbar ────────────────────────────────────────────────────────────── */
+.jd-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    padding: 8px 16px;
+    gap: 12px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-primary);
+    flex-wrap: wrap;
+}
+
+.jd-toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.jd-toolbar-right {
+    justify-content: flex-end;
+}
+
+.jd-toolbar-center {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.jd-panel-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+
+/* Toolbar buttons */
+.jd-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.jd-btn-primary {
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+}
+.jd-btn-primary:hover {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+}
+
+.jd-btn-secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-primary);
+}
+.jd-btn-secondary:hover {
+    background: var(--border-primary);
+    transform: translateY(-1px);
+}
+
+.jd-btn-ghost {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid transparent;
+}
+.jd-btn-ghost:hover {
+    color: var(--danger);
+    border-color: var(--danger);
+    background: rgba(231, 76, 60, 0.08);
+}
+
+/* Navigation group */
+.jd-nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    padding: 3px 6px;
+}
+
+.jd-nav-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.jd-nav-btn:hover:not(:disabled) {
+    background: var(--border-primary);
+}
+.jd-nav-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.jd-counter {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    min-width: 52px;
+    text-align: center;
+    user-select: none;
+}
+
+/* Summary badge */
+.jd-summary {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+}
+.jd-summary.jd-identical {
+    background: rgba(39, 174, 96, 0.15);
+    color: var(--success);
+    border: 1px solid rgba(39, 174, 96, 0.3);
+}
+.jd-summary.jd-has-diffs {
+    background: rgba(243, 156, 18, 0.15);
+    color: var(--warning);
+    border: 1px solid rgba(243, 156, 18, 0.3);
+}
+
+/* ── Editor panels ──────────────────────────────────────────────────────── */
+.jd-editor-panels {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.jd-editor-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.jd-editor-divider {
+    width: 3px;
+    flex-shrink: 0;
+    background: var(--border-primary);
+    position: relative;
+}
+.jd-editor-divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 3px;
+    height: 40px;
+    border-radius: 2px;
+    background: var(--accent-primary);
+    opacity: 0.4;
+}
+
+.jd-textarea {
+    flex: 1;
+    width: 100%;
+    padding: 14px 16px;
+    border: none;
+    outline: none;
+    resize: none;
+    font-family: 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.65;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    tab-size: 2;
+    min-height: 0;
+}
+.jd-textarea::placeholder {
+    color: var(--text-muted);
+    font-style: italic;
+    font-size: 12px;
+}
+.jd-textarea:focus {
+    background: var(--bg-secondary);
+    box-shadow: inset 0 0 0 2px rgba(52, 152, 219, 0.25);
+}
+
+/* Dark theme textareas */
+body.dark-theme .jd-textarea {
+    background: rgba(15, 20, 35, 0.6);
+}
+body.dark-theme .jd-textarea:focus {
+    background: rgba(20, 27, 48, 0.8);
+}
+
+/* ── Diff view ──────────────────────────────────────────────────────────── */
+.jd-diff-view {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: auto;
+    display: flex;
+    flex-direction: column;
+    font-family: 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace;
+    font-size: 12.5px;
+    line-height: 1.6;
+    background: var(--bg-tertiary);
+}
+
+/* Each row spans full width, containing two half-width cells */
+.jd-row {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    border-bottom: 1px solid var(--border-secondary);
+}
+.jd-row:last-child {
+    border-bottom: none;
+}
+
+/* Column headers row */
+.jd-header-row {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--bg-secondary);
+    border-bottom: 2px solid var(--border-primary) !important;
+}
+.jd-header-row .jd-cell {
+    padding: 6px 12px;
+    background: transparent;
+}
+.jd-col-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary);
+}
+
+/* Each cell is half the row */
+.jd-cell {
+    flex: 1;
+    display: flex;
+    align-items: flex-start;
+    padding: 1px 0;
+    min-width: 0;
+    border-left: 3px solid transparent;
+}
+.jd-cell + .jd-cell {
+    border-left-color: var(--border-primary);
+    border-left-width: 1px;
+}
+
+/* Equal lines */
+.jd-equal {
+    background: transparent;
+    border-left-color: transparent !important;
+}
+
+/* Deleted lines (left) */
+.jd-deleted {
+    background: rgba(231, 76, 60, 0.10);
+    border-left-color: #e74c3c !important;
+}
+body.dark-theme .jd-deleted {
+    background: rgba(231, 76, 60, 0.14);
+}
+
+/* Inserted lines (right) */
+.jd-inserted {
+    background: rgba(39, 174, 96, 0.10);
+    border-left-color: #27ae60 !important;
+}
+body.dark-theme .jd-inserted {
+    background: rgba(39, 174, 96, 0.14);
+}
+
+/* Placeholder (empty slot to keep alignment) */
+.jd-placeholder {
+    background: var(--bg-secondary);
+    border-left-color: transparent !important;
+    opacity: 0.6;
+}
+
+/* Active-hunk highlight (navigation) */
+.jd-row.jd-hunk-active .jd-deleted {
+    background: rgba(231, 76, 60, 0.22);
+}
+.jd-row.jd-hunk-active .jd-inserted {
+    background: rgba(39, 174, 96, 0.22);
+}
+.jd-row.jd-hunk-active .jd-deleted,
+.jd-row.jd-hunk-active .jd-inserted {
+    outline: none;
+}
+.jd-row.jd-hunk-active {
+    box-shadow: inset 2px 0 0 var(--accent-primary),
+                inset -2px 0 0 var(--accent-primary);
+}
+
+/* Line number */
+.jd-num {
+    min-width: 38px;
+    padding: 0 10px 0 8px;
+    text-align: right;
+    color: var(--text-muted);
+    user-select: none;
+    flex-shrink: 0;
+    font-size: 11px;
+    opacity: 0.7;
+}
+
+/* +/- sign */
+.jd-sign {
+    min-width: 16px;
+    flex-shrink: 0;
+    font-weight: 700;
+    padding-right: 4px;
+}
+.jd-deleted .jd-sign  { color: #e74c3c; }
+.jd-inserted .jd-sign { color: #27ae60; }
+.jd-equal .jd-sign,
+.jd-placeholder .jd-sign { color: transparent; }
+
+/* Line content */
+.jd-text {
+    flex: 1;
+    white-space: pre-wrap;
+    word-break: break-all;
+    padding-right: 12px;
+    min-width: 0;
+}
+
+/* Light theme – use solid, opaque colours everywhere so nothing bleeds through */
+body.light-theme .jd-container {
+    color: #2c3e50;
+}
+body.light-theme .jd-toolbar {
+    background: #ffffff;
+    border-bottom-color: rgba(0, 0, 0, 0.1);
+}
+body.light-theme .jd-panel-label {
+    color: #5a6c7d;
+}
+body.light-theme .jd-textarea {
+    background: #f8f9fa;
+    color: #2c3e50;
+}
+body.light-theme .jd-textarea:focus {
+    background: #ffffff;
+}
+body.light-theme .jd-diff-view {
+    background: #f8f9fa;
+    color: #2c3e50;
+}
+body.light-theme .jd-header-row {
+    background: #ffffff;
+}
+body.light-theme .jd-col-label {
+    color: #5a6c7d;
+}
+body.light-theme .jd-num {
+    color: #95a5a6;
+}
+body.light-theme .jd-equal {
+    background: #f8f9fa;
+}
+body.light-theme .jd-placeholder {
+    background: #eff0f1;
+}
+body.light-theme .jd-deleted {
+    background: rgba(231, 76, 60, 0.08);
+}
+body.light-theme .jd-inserted {
+    background: rgba(39, 174, 96, 0.09);
+}
+body.light-theme .jd-row.jd-hunk-active .jd-deleted {
+    background: rgba(231, 76, 60, 0.18);
+}
+body.light-theme .jd-row.jd-hunk-active .jd-inserted {
+    background: rgba(39, 174, 96, 0.18);
+}
+body.light-theme .jd-nav {
+    background: #f0f2f5;
+    border-color: rgba(0, 0, 0, 0.12);
+}
+body.light-theme .jd-nav-btn {
+    color: #2c3e50;
+}
+body.light-theme .jd-counter {
+    color: #2c3e50;
+}
+body.light-theme .jd-btn-secondary {
+    background: #f0f2f5;
+    color: #2c3e50;
+    border-color: rgba(0, 0, 0, 0.12);
+}
+body.light-theme .jd-btn-secondary:hover {
+    background: #e2e6ea;
+}
+body.light-theme .jd-editor-divider {
+    background: rgba(0, 0, 0, 0.1);
+}
+body.light-theme .jd-diff-view::-webkit-scrollbar-track {
+    background: #f0f2f5;
+}
+body.light-theme .jd-diff-view::-webkit-scrollbar-thumb {
+    background: #c0c7ce;
+}
+
+/* Apply theme to container */
+body.light-theme .jd-container,
+body.dark-theme .jd-container {
+    background: var(--bg-primary);
+}
+
+/* Scrollbar styling for diff view */
+.jd-diff-view::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+.jd-diff-view::-webkit-scrollbar-track {
+    background: var(--bg-tertiary);
+}
+.jd-diff-view::-webkit-scrollbar-thumb {
+    background: var(--border-primary);
+    border-radius: 4px;
+}
+.jd-diff-view::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
